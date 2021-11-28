@@ -3,6 +3,8 @@ from nilearn.plotting import plot_glass_brain
 
 
 def get_maps(n_subjects):
+    """ loads the t-maps and beta-maps for all the subjects of the experiments """
+
     t_maps = [None] * n_subjects
     beta_maps = [None] * n_subjects
 
@@ -14,11 +16,14 @@ def get_maps(n_subjects):
 
 
 def get_masks(n_subjects, plot=False):
+    """ returns the masks for the 4 regions('V5_R', 'V5_L', 'PT_R', 'PT_L') in a dictionary by subject ,
+     and also the masks for the whole subjects brains """
+
     masks_names = ['V5_R', 'V5_L', 'PT_R', 'PT_L']
-    masks = [None] * n_subjects
+    masks = [dict() for _ in range(n_subjects)]
     masks_full = [None] * n_subjects
 
-    for i in range(n_subjects):
+    for i in range(n_subjects) :
         masks_full[i] = load_img("masks/WHOLE_sub" + str(i + 1) + ".nii")
         masks[i] = dict()
         for name in masks_names:
