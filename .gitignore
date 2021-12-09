@@ -1,0 +1,8 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# JetBrains project
+.idea/
+
+# Jupyter notebook
+.ipynb_checkpoints
