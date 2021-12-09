@@ -7,6 +7,10 @@ __pycache__/
 # Jupyter notebook
 .ipynb_checkpoints
 
-# niftii folders
+# niftii files
+*.nii
+*.nii.gz
+
+# niftii folders (specific to our project architecture)
 masks/
 brain_maps/
