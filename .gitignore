@@ -4,8 +4,11 @@ __pycache__/
 # JetBrains project
 .idea/
 
-# Jupyter notebook
+# Jupyter notebook metadata
 .ipynb_checkpoints
+
+# iutput folders
+out/
 
 # niftii files
 *.nii

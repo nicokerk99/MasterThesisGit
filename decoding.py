@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 
 class Decoder:
@@ -52,44 +53,40 @@ class Decoder:
         :param brain_map: list of maps (size n_samples), which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param base_score: score obtained with true labels
-        :return: the estimated p-value for classification on this data """
+        :return: the estimated p-value for classification on this data,
+         and permutations scores """
 
         random.seed(self.seed)
         count = 0
         gap = int(len(labels) / self.n_classes)
-        for _ in range(self.n_perm):
+        scores_perms = np.zeros(self.n_perm)
+        for j in range(self.n_perm):
             labels_copy = labels.copy()
 
             # shuffling but keeping a structure
             for i in range(gap):
-                indexes = range(i,len(labels),gap)
+                indexes = range(i, len(labels), gap)
                 subset_copy = [labels_copy[idx] for idx in indexes]
                 random.shuffle(subset_copy)
                 labels_copy[i:len(labels):gap] = subset_copy
 
             score_perm = self.cross_validate(brain_map, labels_copy)
+            scores_perms[j] = score_perm
             if score_perm > base_score:
                 count += 1
 
-        return count / self.n_perm
+        return count / self.n_perm, scores_perms
 
     def classify(self, brain_maps, labels):
         """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
         'R','R','L','L']
-        :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
+        :param brain_maps: list (for 1 subject) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
-        :return: list (size n_subjects) cross-validation scores, and corresponding p-values """
+        :return: cross-validation score, p-value """
 
-        n_subjects = len(brain_maps)
-        cv_scores = []
-        p_values = []
-
-        for i in range(n_subjects):
-            score = self.cross_validate(brain_maps[i], labels)
-            cv_scores.append(score)
-            p_values.append(self.p_value_random_permutations(brain_maps[i], labels, score))
-
-        return cv_scores, p_values
+        cv_score = self.cross_validate(brain_maps[0], labels)
+        p_val, scores_perm = self.p_value_random_permutations(brain_maps[0], labels, cv_score)
+        return cv_score, p_val, scores_perm
 
     def classify_tasks_regions(self, brain_maps, labels, tasks_names, regions_names):
         """
@@ -101,13 +98,14 @@ class Decoder:
                 and another dictionary with the corresponding p-values """
         cv_scores = dict()
         p_values = dict()
+        scores_perm = dict()
         for task_name in tasks_names:
             for region_name in regions_names:
                 _maps = [maps[region_name] for maps in brain_maps[task_name]]
                 key = task_name + "_" + region_name
-                cv_scores[key], p_values[key] = self.classify(_maps, labels[task_name])
+                cv_scores[key], p_values[key], scores_perm[key] = self.classify(_maps, labels[task_name])
 
-        return cv_scores, p_values
+        return cv_scores, p_values, scores_perm
 
     def cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names):
         """
@@ -123,13 +121,12 @@ class Decoder:
         def sub(task_order):
             key = task_order[0] + "_" + task_order[1] + "_"
             for region_name in regions_names:
-                scores[key + region_name] = []
                 _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
                 _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
                 for i in range(len(_maps_0)):
                     self.model.fit(_maps_0[i], labels[task_order[0]])
                     acc = self.model.score(_maps_1[i], labels[task_order[1]])
-                    scores[key + region_name].append(acc)
+                    scores[key + region_name] = acc
             return
 
         sub(tasks_names)
