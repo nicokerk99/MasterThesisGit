@@ -9,9 +9,10 @@ def get_maps(id_subjects):
     t_maps = [None] * len(id_subjects)
     beta_maps = [None] * len(id_subjects)
 
-    for i, ide in enumerate(id_subjects):
-        t_maps[i] = load_img("brain_maps/sub" + str(ide) + "_4D_t_maps_0.nii")
-        beta_maps[i] = load_img("brain_maps/sub" + str(ide) + "_4D_beta_0.nii")
+    for i, identity in enumerate(id_subjects):
+        ide = str(identity)
+        t_maps[i] = load_img("brain_maps/sub" + ide + "_4D_t_maps_0.nii")
+        beta_maps[i] = load_img("brain_maps/sub" + ide + "_4D_beta_0.nii")
 
     return t_maps, beta_maps
 
@@ -25,11 +26,13 @@ def get_masks(id_subjects, plot=False):
     masks = [dict() for _ in range(len(id_subjects))]
     masks_full = [None] * len(id_subjects)
 
-    for i, ide in enumerate(id_subjects):
-        masks_full[i] = load_img("masks/WHOLE_sub" + str(ide) + ".nii")
+    for i, identity in enumerate(id_subjects):
+        if identity <= 9 :
+            ide = "0"+str(identity)
+        masks_full[i] = load_img("masks/WHOLE_sub" + ide + ".nii")
         masks[i] = dict()
         for name in masks_names:
-            masks[i][name] = load_img("masks/ROI_sub" + str(ide) + "_" + name + ".nii")
+            masks[i][name] = load_img("masks/ROI_sub" + ide + "_" + name + ".nii")
             if plot :
-                plot_glass_brain(masks[i][name], title=name + " - subject " + str(ide))
+                plot_glass_brain(masks[i][name], title=name + " - subject " + ide)
     return masks, masks_full
