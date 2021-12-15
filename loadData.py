@@ -18,21 +18,19 @@ def get_maps(id_subjects):
 
 
 def get_masks(id_subjects, plot=False):
-    """ returns the masks for the 4 regions('V5_R', 'V5_L', 'PT_R', 'PT_L') in a dictionary by subject ,
-     and also the masks for the whole subjects brains
+    """ returns the masks for the 4 regions('V5_R', 'V5_L', 'PT_R', 'PT_L') in a dictionary by subject.
       @:param : id_subjects is a list of subject id's (ints) from which you want to get the maps"""
 
     masks_names = ['V5_R', 'V5_L', 'PT_R', 'PT_L']
     masks = [dict() for _ in range(len(id_subjects))]
-    masks_full = [None] * len(id_subjects)
 
     for i, identity in enumerate(id_subjects):
-        if identity <= 9 :
-            ide = "0"+str(identity)
-        masks_full[i] = load_img("masks/WHOLE_sub" + ide + ".nii")
+        ide = str(identity) 
+        if identity <= 9 : ide = "0"+ide
+        
         masks[i] = dict()
         for name in masks_names:
-            masks[i][name] = load_img("masks/ROI_sub" + ide + "_" + name + ".nii")
+            masks[i][name] = load_img("masks/" + name + "_sub" + ide +".nii")
             if plot :
                 plot_glass_brain(masks[i][name], title=name + " - subject " + ide)
-    return masks, masks_full
+    return masks
