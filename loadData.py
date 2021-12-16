@@ -2,7 +2,7 @@ from nilearn.image import load_img
 from nilearn.plotting import plot_glass_brain
 
 
-def get_maps(id_subjects, test = ""):
+def get_maps(id_subjects):
     """ loads the t-maps and beta-maps for all the subjects of the experiments
      @:param : id_subjects is a list of subject id's (ints) from which you want to get the maps"""
 
@@ -11,13 +11,13 @@ def get_maps(id_subjects, test = ""):
 
     for i, identity in enumerate(id_subjects):
         ide = str(identity)
-        t_maps[i] = load_img("brain_maps/sub" + ide + "_4D_t_maps_0" + test + ".nii")
-        beta_maps[i] = load_img("brain_maps/sub" + ide + "_4D_beta_0" + test + ".nii")
+        t_maps[i] = load_img("brain_maps/sub" + ide + "_4D_t_maps_0" + ".nii")
+        beta_maps[i] = load_img("brain_maps/sub" + ide + "_4D_beta_0" + ".nii")
 
     return t_maps, beta_maps
 
 
-def get_masks(id_subjects, plot=False, test = ""):
+def get_masks(id_subjects, plot=False):
     """ returns the masks for the 4 regions('V5_R', 'V5_L', 'PT_R', 'PT_L') in a dictionary by subject.
       @:param : id_subjects is a list of subject id's (ints) from which you want to get the maps"""
 
@@ -30,7 +30,7 @@ def get_masks(id_subjects, plot=False, test = ""):
         
         masks[i] = dict()
         for name in masks_names:
-            masks[i][name] = load_img("masks/" + name + "_sub" + ide + test + ".nii")
+            masks[i][name] = load_img("masks/" + name + "_sub" + ide + ".nii")
             if plot :
                 plot_glass_brain(masks[i][name], title=name + " - subject " + ide)
     return masks
