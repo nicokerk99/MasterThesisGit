@@ -17,3 +17,7 @@ out/
 # niftii folders (specific to our project architecture)
 masks/
 brain_maps/
+
+# plots
+plots/ 
+*.png
