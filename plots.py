@@ -64,7 +64,7 @@ class Plotter():
         df = pd.read_csv(filename)
 
         for k in df.keys()[1:]:
-            values = [str_to_array(df.iloc[i][k][0][1:-1], n_perms) for i in range(len(self.subject_ids))]
+            values = [str_to_array(df.iloc[i][k][1:-1], n_perms) for i in range(len(self.subject_ids))]
 
             self.plot_and_save(list(map(stats.mean, values)), "mean_" + k, self.perms_scores_dir)
             self.plot_and_save(list(map(stats.variance, values)), "var_" + k, self.perms_scores_dir)
