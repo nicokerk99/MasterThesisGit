@@ -22,7 +22,7 @@ class Plotter():
         self.cv_scores_dir = cv_scores_dir
         self.p_values_dir = p_values_dir
         self.perms_scores_dir = perms_scores_dir
-        self.subject_ids = subject_ids
+        self.subject_ids = range(len(subject_ids))
         self.colormaps = [cm.Spectral, cm.Set1, cm.Set2, cm.tab10, cm.Set3]
         self.translation = {"vis" : ["vision", "visual"], "aud" : ["audition", "auditive"], "R" : "right", "L" : "left"}
 
