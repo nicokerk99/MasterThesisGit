@@ -23,6 +23,7 @@ class Plotter():
         self.perms_scores_dir = perms_scores_dir
         self.subject_ids = subject_ids
         self.colors = ["red", "red", "blue", "blue", "green", "green", "yellow", "yellow", "brown", "brown"]
+        self.translation = {"vis" : "vision", "aud" : "audition", "R" : "right", "L" : "left"}
 
         # create the necessary directories
         for di in [cv_scores_dir, p_values_dir, perms_scores_dir]:
@@ -38,6 +39,10 @@ class Plotter():
         plt.bar(self.subject_ids, y, label=label.replace("_", " "), color = color)
         if chance_level: plt.plot(self.subject_ids, [0.25]*len(self.subject_ids), label = "chance level", color = "black")
         plt.legend()
+        if label[:3] in self.translation:
+            train = ""
+            if label [4:7] in self.translation: train = " when training on "+self.translation[label[4:7]] 
+            plt.title("Decoding of " + self.translation[label[:3]] + " in "+ label[-4:-2] + train + " (" +self.translation[label[-1]] + " hemisphere)")
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg")
         plt.close()
 
