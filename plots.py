@@ -23,14 +23,14 @@ class Plotter():
         self.perms_scores_dir = perms_scores_dir
         self.subject_ids = subject_ids
         self.colors = ["red", "red", "blue", "blue", "green", "green", "yellow", "yellow", "brown", "brown"]
-        self.translation = {"vis" : "vision", "aud" : "audition", "R" : "right", "L" : "left"}
+        self.translation = {"vis" : ["vision", "visual"], "aud" : ["audition", "auditive"], "R" : "right", "L" : "left"}
 
         # create the necessary directories
         for di in [cv_scores_dir, p_values_dir, perms_scores_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
-    def plot_and_save(self, y, label, sub_dir, chance_level = False, color = "orange"):
+    def plot_and_save(self, y, label, sub_dir, chance_level = False, color = "orange", title = ""):
         """ Utilitary function that plots y along the self.subject_ids axis with a legend
         and saves it in self.plot_dir/sub_dir/
         @param y: axis to plot
@@ -39,12 +39,21 @@ class Plotter():
         plt.bar(self.subject_ids, y, label=label.replace("_", " "), color = color)
         if chance_level: plt.plot(self.subject_ids, [0.25]*len(self.subject_ids), label = "chance level", color = "black")
         plt.legend()
-        if label[:3] in self.translation:
-            train = ""
-            if label [4:7] in self.translation: train = " when training on "+self.translation[label[4:7]] 
-            plt.title("Decoding of " + self.translation[label[:3]] + " in "+ label[-4:-2] + train + " (" +self.translation[label[-1]] + " hemisphere)")
+        plt.title(title)
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg")
         plt.close()
+
+
+    def generate_title(self, label, plot_type):
+        title = ""
+        train = ""
+        if label [4:7] in self.translation: train = " when training on "+self.translation[label[4:7]][0]
+        
+        title = "Decoding " + self.translation[label[:3]][1] + " motion direction in "+ label[-4:-2] + train + " (" +self.translation[label[-1]] + ")"
+        
+        if plot_type == "cv_scores": return title
+        elif plot_type == "p-values": return "P-value when "+title 
+
 
     def plot_cv_scores(self, filename):
         """ function to plot the results of the cross validation. these are plotted along the subjects axis
@@ -52,7 +61,7 @@ class Plotter():
         df = pd.read_csv(filename)
 
         for k, c in zip(df.keys()[1:], self.colors[:len(df.keys()[1:])]):
-            self.plot_and_save(df.iloc[0:][k], k, self.cv_scores_dir, chance_level = True, color = c)
+            self.plot_and_save(df.iloc[0:][k], k, self.cv_scores_dir, chance_level = True, color = c, title = self.generate_title(k, "cv_scores"))
 
     def plot_p_values(self, filename):
         """ function to plot the p-values. these are plotted along the subjects axis
@@ -60,7 +69,7 @@ class Plotter():
         df = pd.read_csv(filename)
 
         for k, c in zip(df.keys()[1:], self.colors[:len(df.keys()[1:])]):
-            self.plot_and_save(df.iloc[0:][k], k, self.p_values_dir, color = c)
+            self.plot_and_save(df.iloc[0:][k], k, self.p_values_dir, color = c, title = self.generate_title(k, "p-values"))
 
     def plot_perms_scores(self, filename, n_perms):
         """ function to plot the results of the permutations. these are plotted along the subjects axis.
