@@ -22,21 +22,23 @@ class Plotter():
         self.p_values_dir = p_values_dir
         self.perms_scores_dir = perms_scores_dir
         self.subject_ids = subject_ids
+        self.colors = ["red", "red", "blue", "blue", "green", "green", "yellow", "yellow", "brown", "brown"]
 
         # create the necessary directories
         for di in [cv_scores_dir, p_values_dir, perms_scores_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
-    def plot_and_save(self, y, label, sub_dir):
+    def plot_and_save(self, y, label, sub_dir, chance_level = False, color = "orange"):
         """ Utilitary function that plots y along the self.subject_ids axis with a legend
         and saves it in self.plot_dir/sub_dir/
         @param y: axis to plot
         @param label: legend of the plot
         @param sub_dir: sub directory in which to put the figure """
-        plt.plot(self.subject_ids, y, label=label.replace("_", " "))
+        plt.bar(self.subject_ids, y, label=label.replace("_", " "), color = color)
+        if chance_level: plt.plot(self.subject_ids, [0.25]*len(self.subject_ids), label = "chance level", color = "black")
         plt.legend()
-        plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".png")
+        plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg")
         plt.close()
 
     def plot_cv_scores(self, filename):
@@ -44,16 +46,16 @@ class Plotter():
         @param filename: the file in which the needed dataframe is located """
         df = pd.read_csv(filename)
 
-        for k in df.keys()[1:]:
-            self.plot_and_save(df.iloc[0:][k], k, self.cv_scores_dir)
+        for k, c in zip(df.keys()[1:], self.colors[:len(df.keys()[1:])]):
+            self.plot_and_save(df.iloc[0:][k], k, self.cv_scores_dir, chance_level = True, color = c)
 
     def plot_p_values(self, filename):
         """ function to plot the p-values. these are plotted along the subjects axis
         @param filename: the file in which the needed dataframe is located """
         df = pd.read_csv(filename)
 
-        for k in df.keys()[1:]:
-            self.plot_and_save(df.iloc[0:][k], k, self.p_values_dir)
+        for k, c in zip(df.keys()[1:], self.colors[:len(df.keys()[1:])]):
+            self.plot_and_save(df.iloc[0:][k], k, self.p_values_dir, color = c)
 
     def plot_perms_scores(self, filename, n_perms):
         """ function to plot the results of the permutations. these are plotted along the subjects axis.
@@ -75,11 +77,11 @@ class Plotter():
 def str_to_array(str_array, length):
     vals = [0] * length
     i = 0
-    for v in str_array.split(' '):
-        if '\n' in v:
+    for v in str_array.split(" "):
+        if "\n" in v:
             vals[i] = float(v[0:-2])
             i += 1
-        elif v != '':
+        elif v != "":
             vals[i] = float(v)
             i += 1
     return vals
