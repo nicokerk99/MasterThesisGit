@@ -32,12 +32,14 @@ class Plotter():
                 os.makedirs(plot_dir + "/" + di)
 
 
-    def save_plot(self, label, sub_dir, ylabel, chance_level = False):
+    def plot_and_save(self, dict_data, label, sub_dir, ylabel, color, chance_level = False):
         """ Utilitary function that plots y along the self.subject_ids axis with a legend
         and saves it in self.plot_dir/sub_dir/
         @param y: axis to plot
         @param label: legend of the plot
         @param sub_dir: sub directory in which to put the figure """
+        plot_df = pd.DataFrame(dict_data, index = self.subject_ids)
+        plot_df.plot(kind = 'bar', colormap = color)
         if chance_level: plt.plot(self.subject_ids, [0.25]*len(self.subject_ids), label = "chance level", color = "black", alpha = 0.5)
         plt.legend()
         plt.title(self.generate_title(label, ylabel))
@@ -74,9 +76,8 @@ class Plotter():
         while i < len(keys):
             keyR = keys[i]
             keyL = keys[i+1]
-            plot_data = pd.DataFrame({"R" : df.iloc[0:][keyR], "L" : df.iloc[0:][keyL]}, index = self.subject_ids)
-            plot_data.plot(kind = 'bar', colormap = colors[int(i/2)])
-            self.save_plot(keyR[:-2], sub_dir, ylabel, chance_level = chance_level)
+            dict_data = {"R" : df.iloc[0:][keyR], "L" : df.iloc[0:][keyL]}
+            self.plot_and_save(dict_data, keyR[:-2], sub_dir, ylabel, colors[int(i/2)], chance_level = chance_level)
             i+=2
 
 
@@ -99,21 +100,17 @@ class Plotter():
             valR = [str_to_array(df.iloc[i][keyR][1:-1], n_perms) for i in range(len(self.subject_ids))]
             valL = [str_to_array(df.iloc[i][keyL][1:-1], n_perms) for i in range(len(self.subject_ids))]
 
-            plot_data = pd.DataFrame({"R" : list(map(stats.mean, valR)), "L" : list(map(stats.mean, valL))}, index = self.subject_ids)
-            plot_data.plot(kind = 'bar', colormap = colors[int(i/2)])
-            self.save_plot("mean_" + keyR[:-2], self.perms_scores_dir, ylabel)
+            dict_data = {"R" : list(map(stats.mean, valR)), "L" : list(map(stats.mean, valL))}
+            self.plot_and_save(dict_data, "mean_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
             
-            plot_data = pd.DataFrame({"R" : list(map(stats.variance, valR)), "L" : list(map(stats.variance, valL))}, index = self.subject_ids)
-            plot_data.plot(kind = 'bar', colormap = colors[int(i/2)])
-            self.save_plot("var_" + keyR[:-2], self.perms_scores_dir, ylabel)
+            dict_data = {"R" : list(map(stats.variance, valR)), "L" : list(map(stats.variance, valL))}
+            self.plot_and_save(dict_data, "var_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
             
-            plot_data = pd.DataFrame({"R" : list(map(min, valR)), "L" : list(map(min, valL))}, index = self.subject_ids)
-            plot_data.plot(kind = 'bar', colormap = colors[int(i/2)])
-            self.save_plot("min_" + keyR[:-2], self.perms_scores_dir, ylabel)
+            dict_data = {"R" : list(map(min, valR)), "L" : list(map(min, valL))}
+            self.plot_and_save(dict_data, "min_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
 
-            plot_data = pd.DataFrame({"R" : list(map(max, valR)), "L" : list(map(max, valL))}, index = self.subject_ids)
-            plot_data.plot(kind = 'bar', colormap = colors[int(i/2)])
-            self.save_plot("max_" + keyR[:-2], self.perms_scores_dir, ylabel)
+            dict_data = {"R" : list(map(max, valR)), "L" : list(map(max, valL))}
+            self.plot_and_save(dict_data, "max_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
             i+=2
 
 
