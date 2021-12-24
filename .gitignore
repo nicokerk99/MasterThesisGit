@@ -19,5 +19,5 @@ masks/
 brain_maps/
 
 # plots
-plots/ 
+plots*/ 
 *.png
