@@ -22,25 +22,26 @@ class Plotter():
         self.cv_scores_dir = cv_scores_dir
         self.p_values_dir = p_values_dir
         self.perms_scores_dir = perms_scores_dir
-        self.subject_ids = range(len(subject_ids))
+        # self.subject_ids = range(len(subject_ids))
+        self.subject_ids = subject_ids
         self.colormaps = [cm.Spectral, cm.Set1, cm.Set2, cm.tab10, cm.Set3]
-        self.translation = {"vis" : ["vision", "visual"], "aud" : ["audition", "auditive"], "R" : "right", "L" : "left"}
+        self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "R": "right", "L": "left"}
 
         # create the necessary directories
         for di in [cv_scores_dir, p_values_dir, perms_scores_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
-
-    def plot_and_save(self, dict_data, label, sub_dir, ylabel, color, chance_level = False):
+    def plot_and_save(self, dict_data, label, sub_dir, ylabel, color, chance_level=False):
         """ Utilitary function that plots y along the self.subject_ids axis with a legend
         and saves it in self.plot_dir/sub_dir/
         @param y: axis to plot
         @param label: legend of the plot
         @param sub_dir: sub directory in which to put the figure """
-        plot_df = pd.DataFrame(dict_data, index = self.subject_ids)
-        plot_df.plot(kind = 'bar', colormap = color)
-        if chance_level: plt.plot(self.subject_ids, [0.25]*len(self.subject_ids), label = "chance level", color = "black", alpha = 0.5)
+        plot_df = pd.DataFrame(dict_data, index=self.subject_ids)
+        plot_df.plot(kind='bar', colormap=color)
+        if chance_level:
+            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.legend()
         plt.title(self.generate_title(label, ylabel))
         plt.xlabel("subject id")
@@ -48,38 +49,37 @@ class Plotter():
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg")
         plt.close()
 
-
     def generate_title(self, label, plot_type):
         title = ""
         train = ""
-        if plot_type == "perm score": 
-            title = label.split('_')[0]+" "
+        if plot_type == "perm score":
+            title = label.split('_')[0] + " "
             label = label[len(title):]
 
-        if label [4:7] in self.translation: 
-            train = " when training on "+self.translation[label[4:7]][0]
-        
-        title = title + "Decoding " + self.translation[label[:3]][1] + " motion direction in "+ label[-2:] + train
-        
-        if plot_type == "p-values": return "P-value when "+title 
-        else : return title
+        if label[4:7] in self.translation:
+            train = " when training on " + self.translation[label[4:7]][0]
 
+        title = title + "Decoding " + self.translation[label[:3]][1] + " motion direction in " + label[-2:] + train
 
-    def plot_cv_pval(self, filename, ylabel, sub_dir, chance_level = False):
+        if plot_type == "p-values":
+            return "P-value when " + title
+        else:
+            return title
+
+    def plot_cv_pval(self, filename, ylabel, sub_dir, chance_level=False):
         """ function to plot the results of the cross validation. these are plotted along the subjects axis
         @param filename: the file in which the needed dataframe is located """
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, index_col=0)
         keys = df.keys()[1:]
         colors = self.colormaps[:len(keys)]
 
         i = 0
-        while i < len(keys):
+        while i < len(keys) - 1:
             keyR = keys[i]
-            keyL = keys[i+1]
-            dict_data = {"R" : df.iloc[0:][keyR], "L" : df.iloc[0:][keyL]}
-            self.plot_and_save(dict_data, keyR[:-2], sub_dir, ylabel, colors[int(i/2)], chance_level = chance_level)
-            i+=2
-
+            keyL = keys[i + 1]
+            dict_data = {"R": df.iloc[0:][keyR], "L": df.iloc[0:][keyL]}
+            self.plot_and_save(dict_data, keyR[:-2], sub_dir, ylabel, colors[int(i / 2)], chance_level=chance_level)
+            i += 2
 
     def plot_perms_scores(self, filename, n_perms):
         """ function to plot the results of the permutations. these are plotted along the subjects axis.
@@ -87,32 +87,31 @@ class Plotter():
         for each subjects 
         @param filename: the file in which the needed dataframe is located
         @param n_perms: the number of permutations """
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, index_col=0)
         ylabel = "perm score"
         keys = df.keys()[1:]
         colors = self.colormaps[:len(keys)]
 
         i = 0
-        while i < len(keys):
+        while i < len(keys) - 1 :
             keyR = keys[i]
-            keyL = keys[i+1]
-            
+            keyL = keys[i + 1]
+
             valR = [str_to_array(df.iloc[i][keyR][1:-1], n_perms) for i in range(len(self.subject_ids))]
             valL = [str_to_array(df.iloc[i][keyL][1:-1], n_perms) for i in range(len(self.subject_ids))]
 
-            dict_data = {"R" : list(map(stats.mean, valR)), "L" : list(map(stats.mean, valL))}
-            self.plot_and_save(dict_data, "mean_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
-            
-            dict_data = {"R" : list(map(stats.variance, valR)), "L" : list(map(stats.variance, valL))}
-            self.plot_and_save(dict_data, "var_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
-            
-            dict_data = {"R" : list(map(min, valR)), "L" : list(map(min, valL))}
-            self.plot_and_save(dict_data, "min_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
+            dict_data = {"R": list(map(stats.mean, valR)), "L": list(map(stats.mean, valL))}
+            self.plot_and_save(dict_data, "mean_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)], True)
 
-            dict_data = {"R" : list(map(max, valR)), "L" : list(map(max, valL))}
-            self.plot_and_save(dict_data, "max_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i/2)])
-            i+=2
+            dict_data = {"R": list(map(stats.variance, valR)), "L": list(map(stats.variance, valL))}
+            self.plot_and_save(dict_data, "var_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)])
 
+            dict_data = {"R": list(map(min, valR)), "L": list(map(min, valL))}
+            self.plot_and_save(dict_data, "min_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)])
+
+            dict_data = {"R": list(map(max, valR)), "L": list(map(max, valL))}
+            self.plot_and_save(dict_data, "max_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)])
+            i += 2
 
 
 def str_to_array(str_array, length):
