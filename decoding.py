@@ -75,7 +75,7 @@ class Decoder:
             if score_perm > base_score:
                 count += 1
 
-        return count / self.n_perm, scores_perms
+        return ((count+1) / (self.n_perm+1)), scores_perms
 
     def classify(self, brain_maps, labels):
         """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
