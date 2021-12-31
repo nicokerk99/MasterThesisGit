@@ -2,6 +2,19 @@ import random
 import numpy as np
 
 
+def permute_labels(labels, gap):
+    labels_copy = labels.copy()
+
+    # shuffling but keeping a structure
+    for i in range(gap):
+        indexes = range(i, len(labels), gap)
+        subset_copy = [labels_copy[idx] for idx in indexes]
+        random.shuffle(subset_copy)
+        labels_copy[i:len(labels):gap] = subset_copy
+
+    return labels_copy
+
+
 class Decoder:
     """ This class eases the use of machine learning models, cross-validation
     and random permutations significance assessment for neuro-imaging data
@@ -61,39 +74,35 @@ class Decoder:
         gap = int(len(labels) / self.n_classes)
         scores_perms = np.zeros(self.n_perm)
         for j in range(self.n_perm):
-            labels_copy = labels.copy()
-
-            # shuffling but keeping a structure
-            for i in range(gap):
-                indexes = range(i, len(labels), gap)
-                subset_copy = [labels_copy[idx] for idx in indexes]
-                random.shuffle(subset_copy)
-                labels_copy[i:len(labels):gap] = subset_copy
-
-            score_perm = self.cross_validate(brain_map, labels_copy)
+            labels_perm = permute_labels(labels, gap)
+            score_perm = self.cross_validate(brain_map, labels_perm)
             scores_perms[j] = score_perm
             if score_perm > base_score:
                 count += 1
 
-        return ((count+1) / (self.n_perm+1)), scores_perms
+        return ((count + 1) / (self.n_perm + 1)), scores_perms
 
-    def classify(self, brain_maps, labels):
+    def classify(self, brain_maps, labels, do_pval=True):
         """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
         'R','R','L','L']
         :param brain_maps: list (for 1 subject) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
+        :param do_pval: boolean to tell if it is needed to estimate a p-value
         :return: cross-validation score, p-value """
 
         cv_score = self.cross_validate(brain_maps[0], labels)
-        p_val, scores_perm = self.p_value_random_permutations(brain_maps[0], labels, cv_score)
+        p_val, scores_perm = None, None
+        if do_pval:
+            p_val, scores_perm = self.p_value_random_permutations(brain_maps[0], labels, cv_score)
         return cv_score, p_val, scores_perm
 
-    def classify_tasks_regions(self, brain_maps, labels, tasks_names, regions_names):
+    def classify_tasks_regions(self, brain_maps, labels, tasks_names, regions_names, do_pval=True):
         """
         :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param tasks_names: list of strings corresponding to the different experiments
         :param regions_names: list of strings corresponding to the different masks to use
+        :param do_pval: boolean to tell if it is needed to estimate a p-value
         :return: One dictionary with cross-validation scores for the different experiment-mask combo,
                 and another dictionary with the corresponding p-values """
         cv_scores = dict()
@@ -103,7 +112,7 @@ class Decoder:
             for region_name in regions_names:
                 _maps = [maps[region_name] for maps in brain_maps[task_name]]
                 key = task_name + "_" + region_name
-                cv_scores[key], p_values[key], scores_perm[key] = self.classify(_maps, labels[task_name])
+                cv_scores[key], p_values[key], scores_perm[key] = self.classify(_maps, labels[task_name], do_pval)
 
         return cv_scores, p_values, scores_perm
 
@@ -133,3 +142,17 @@ class Decoder:
         sub(tasks_names[::-1])
 
         return scores
+
+    def produce_permuted_labels(self, labels, n_perm):
+        """
+        This function produces n_perm labels datasets, which are obtained by permuting the original labels
+        :param labels: labels to shuffle
+        :param n_perm:
+        :return:
+        """
+        gap = int(len(labels) / self.n_classes)
+        perm_labels = [None] * n_perm
+        for i in range(n_perm):
+            perm_labels[i] = permute_labels(labels, gap)
+
+        return perm_labels
