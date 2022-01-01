@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import time
 
 
 def permute_labels(labels, gap):
@@ -156,3 +157,26 @@ class Decoder:
             perm_labels[i] = permute_labels(labels, gap)
 
         return perm_labels
+
+    def score_bootstrapped_permutations(self, n_single_perm, labels, tasks_regions, maps, n_subjects, within_modality):
+        start_time = time.time()
+        scores_n_perm = [None]*n_subjects
+        for i in range(n_subjects):
+            labels_shuffled_vis = self.produce_permuted_labels(labels, n_single_perm) # repeating for each subject, such that we don't obtain same permutations
+            labels_shuffled_aud = self.produce_permuted_labels(labels, n_single_perm)
+            scores_dicts = [dict() for _ in range(n_single_perm)]
+            for j in range(n_single_perm) :
+                labels_dico = {"vis" : labels_shuffled_vis[j], "aud" : labels_shuffled_aud[j]}
+                for task_regions in tasks_regions :
+                    tasks, regions = task_regions
+                    if within_modality :
+                        cv_sc, _, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, do_pval=False)
+                    else :
+                        cv_sc = self.cross_modal_decoding(maps[i], labels_dico, tasks, regions)
+                    scores_dicts[j].update(cv_sc)
+
+            scores_n_perm[i] = scores_dicts
+
+        duration = time.time()-start_time
+        print("Running models done in "+str(duration)+" seconds")
+        return scores_n_perm
