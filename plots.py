@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 from matplotlib import cm
-import statistics as stats
 import pandas as pd
+import numpy as np
 import os
 
 
@@ -17,102 +17,73 @@ class Plotter():
     @perms_scores_dir : directory in which to save plots for the permutations """
 
     def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", p_values_dir="p_values",
-                 perms_scores_dir="perms_scores"):
+                 perms_scores_dir="perms_scores", color = cm.Spectral):
         self.plot_dir = plot_dir
         self.cv_scores_dir = cv_scores_dir
         self.p_values_dir = p_values_dir
         self.perms_scores_dir = perms_scores_dir
-        # self.subject_ids = range(len(subject_ids))
         self.subject_ids = subject_ids
-        self.colormaps = [cm.Spectral, cm.Set1, cm.Set2, cm.tab10, cm.Set3]
-        self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "R": "right", "L": "left"}
-
+        self.color = color
+        
         # create the necessary directories
         for di in [cv_scores_dir, p_values_dir, perms_scores_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
-    def plot_and_save(self, dict_data, label, sub_dir, ylabel, color, chance_level=False):
+    def plot_and_save(self, dict_data, label, sub_dir, ylabel, chance_level=False):
         """ Utilitary function that plots y along the self.subject_ids axis with a legend
         and saves it in self.plot_dir/sub_dir/
         @param y: axis to plot
         @param label: legend of the plot
         @param sub_dir: sub directory in which to put the figure """
-        plot_df = pd.DataFrame(dict_data, index=self.subject_ids)
-        plot_df.plot(kind='bar', colormap=color)
-        if chance_level:
-            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
+        plot_df = pd.DataFrame(dict_data, index = ["Right", "Left"])
+        plot_df.plot(kind='bar', colormap= self.color)
+        if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.legend()
-        plt.title(self.generate_title(label, ylabel))
+        plt.title(label)
         plt.xlabel("subject id")
         plt.ylabel(ylabel)
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg")
         plt.close()
 
-    def generate_title(self, label, plot_type):
-        title = ""
-        train = ""
-        if plot_type == "perm score":
-            title = label.split('_')[0] + " "
-            label = label[len(title):]
-
-        if label[4:7] in self.translation:
-            train = " when training on " + self.translation[label[4:7]][0]
-
-        title = title + "Decoding " + self.translation[label[:3]][1] + " motion direction in " + label[-2:] + train
-
-        if plot_type == "p-values":
-            return "P-value when " + title
-        else:
-            return title
-
-    def plot_cv_pval(self, filename, ylabel, sub_dir, chance_level=False):
+    def plot_cv_pval(self, df, ylabel, sub_dir, chance_level=False):
         """ function to plot the results of the cross validation. these are plotted along the subjects axis
         @param filename: the file in which the needed dataframe is located """
-        df = pd.read_csv(filename, index_col=0)
-        keys = df.keys()[1:]
-        colors = self.colormaps[:len(keys)]
 
-        i = 0
-        while i < len(keys) - 1:
-            keyR = keys[i]
-            keyL = keys[i + 1]
-            dict_data = {"R": df.iloc[0:][keyR], "L": df.iloc[0:][keyL]}
-            self.plot_and_save(dict_data, keyR[:-2], sub_dir, ylabel, colors[int(i / 2)], chance_level=chance_level)
-            i += 2
+        dict_data = {"audition": map(np.mean, [df.iloc[0:]["aud_V5_R"], df.iloc[0:]["aud_V5_L"]]),
+                     "vision": map(np.mean, [df.iloc[0:]["vis_V5_R"], df.iloc[0:]["vis_V5_L"]])}
+        self.plot_and_save(dict_data, "Decoding in V5", sub_dir, ylabel, chance_level=chance_level)
 
-    def plot_perms_scores(self, filename, n_perms):
+        dict_data = {"audition": map(np.mean, [df.iloc[0:]["aud_PT_R"], df.iloc[0:]["aud_PT_L"]])}
+        self.plot_and_save(dict_data, "Decoding in PT", sub_dir, ylabel, chance_level=chance_level)
+
+        if ylabel == "cv score":
+            dict_data = {"audition trained on vision": map(np.mean, [df.iloc[0:]["aud_vis_V5_R"], df.iloc[0:]["aud_vis_V5_L"]]),
+                         "vision trained on audition": map(np.mean, [df.iloc[0:]["vis_aud_V5_R"], df.iloc[0:]["vis_aud_V5_L"]])}
+            self.plot_and_save(dict_data, "Decoding across modalities in V5", sub_dir, ylabel, chance_level=chance_level)
+
+
+    def plot_perms_scores(self, df, n_perms):
         """ function to plot the results of the permutations. these are plotted along the subjects axis.
         as we often have a ton of permutations, we plot the mean, var, max and min of the permutations scores
         for each subjects 
         @param filename: the file in which the needed dataframe is located
         @param n_perms: the number of permutations """
-        df = pd.read_csv(filename, index_col=0)
         ylabel = "perm score"
-        keys = df.keys()[1:]
-        colors = self.colormaps[:len(keys)]
 
-        i = 0
-        while i < len(keys) - 1 :
-            keyR = keys[i]
-            keyL = keys[i + 1]
+        audRV5 = [str_to_array(df.iloc[i]["aud_V5_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
+        audLV5 = [str_to_array(df.iloc[i]["aud_V5_L"][1:-1], n_perms) for i in range(len(self.subject_ids))]
+        visRV5 = [str_to_array(df.iloc[i]["vis_V5_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
+        visLV5 = [str_to_array(df.iloc[i]["vis_V5_L"][1:-1], n_perms) for i in range(len(self.subject_ids))]
+        audRPT = [str_to_array(df.iloc[i]["aud_PT_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
+        audLPT = [str_to_array(df.iloc[i]["aud_PT_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
 
-            valR = [str_to_array(df.iloc[i][keyR][1:-1], n_perms) for i in range(len(self.subject_ids))]
-            valL = [str_to_array(df.iloc[i][keyL][1:-1], n_perms) for i in range(len(self.subject_ids))]
+        dict_data = {"audition": map(np.mean, [audRV5, audLV5]),
+                     "vision": map(np.mean, [visRV5, visLV5])}
+        self.plot_and_save(dict_data, "Decoding in V5", self.perms_scores_dir, ylabel, chance_level = True)
 
-            dict_data = {"R": list(map(stats.mean, valR)), "L": list(map(stats.mean, valL))}
-            self.plot_and_save(dict_data, "mean_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)], True)
-
-            dict_data = {"R": list(map(stats.variance, valR)), "L": list(map(stats.variance, valL))}
-            self.plot_and_save(dict_data, "var_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)])
-
-            dict_data = {"R": list(map(min, valR)), "L": list(map(min, valL))}
-            self.plot_and_save(dict_data, "min_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)])
-
-            dict_data = {"R": list(map(max, valR)), "L": list(map(max, valL))}
-            self.plot_and_save(dict_data, "max_" + keyR[:-2], self.perms_scores_dir, ylabel, colors[int(i / 2)])
-            i += 2
-
+        dict_data = {"audition": map(np.mean, [audRPT, audLPT])}
+        self.plot_and_save(dict_data, "Decoding in PT", self.perms_scores_dir, ylabel, chance_level = True)       
 
 def str_to_array(str_array, length):
     vals = [0] * length
