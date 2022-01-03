@@ -17,16 +17,17 @@ class Plotter():
     @perms_scores_dir : directory in which to save plots for the permutations """
 
     def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", p_values_dir="p_values",
-                 perms_scores_dir="perms_scores", color = cm.Spectral):
+                 perms_scores_dir="perms_scores", bootstrap_dir = "bootstrap", color = cm.Spectral):
         self.plot_dir = plot_dir
+        self.subject_ids = subject_ids
         self.cv_scores_dir = cv_scores_dir
         self.p_values_dir = p_values_dir
         self.perms_scores_dir = perms_scores_dir
-        self.subject_ids = subject_ids
+        self.bootstrap_dir = bootstrap_dir
         self.color = color
         
         # create the necessary directories
-        for di in [cv_scores_dir, p_values_dir, perms_scores_dir]:
+        for di in [cv_scores_dir, p_values_dir, perms_scores_dir, bootstrap_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
@@ -60,7 +61,7 @@ class Plotter():
         if ylabel == "cv score":
             dict_data = {"audition trained on vision": [df["aud_vis_V5_R"][0], df["aud_vis_V5_L"][0]],
                          "vision trained on audition": [df["vis_aud_V5_R"][0], df["vis_aud_V5_L"][0]]}
-            self.plot_and_save(dict_data, "Decoding across modalities in V5", sub_dir, ylabel, chance_level=chance_level)
+            self.plot_and_save(dict_data, "Decoding across modalities in V5", sub_dir, ylabel, chance_level=chance_level)     
 
 
     def plot_perms_scores(self, df, n_perms):
