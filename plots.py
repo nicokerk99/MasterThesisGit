@@ -50,16 +50,16 @@ class Plotter():
         """ function to plot the results of the cross validation. these are plotted along the subjects axis
         @param filename: the file in which the needed dataframe is located """
 
-        dict_data = {"audition": map(np.mean, [df.iloc[0:]["aud_V5_R"], df.iloc[0:]["aud_V5_L"]]),
-                     "vision": map(np.mean, [df.iloc[0:]["vis_V5_R"], df.iloc[0:]["vis_V5_L"]])}
+        dict_data = {"audition": [df["aud_V5_R"][0], df["aud_V5_L"][0]],
+                     "vision": [df["vis_V5_R"][0], df["vis_V5_L"][0]]}
         self.plot_and_save(dict_data, "Decoding in V5", sub_dir, ylabel, chance_level=chance_level)
 
-        dict_data = {"audition": map(np.mean, [df.iloc[0:]["aud_PT_R"], df.iloc[0:]["aud_PT_L"]])}
+        dict_data = {"audition": [df["aud_PT_R"][0], df["aud_PT_L"][0]]}
         self.plot_and_save(dict_data, "Decoding in PT", sub_dir, ylabel, chance_level=chance_level)
 
         if ylabel == "cv score":
-            dict_data = {"audition trained on vision": map(np.mean, [df.iloc[0:]["aud_vis_V5_R"], df.iloc[0:]["aud_vis_V5_L"]]),
-                         "vision trained on audition": map(np.mean, [df.iloc[0:]["vis_aud_V5_R"], df.iloc[0:]["vis_aud_V5_L"]])}
+            dict_data = {"audition trained on vision": [df["aud_vis_V5_R"][0], df["aud_vis_V5_L"][0]],
+                         "vision trained on audition": [df["vis_aud_V5_R"][0], df["vis_aud_V5_L"][0]]}
             self.plot_and_save(dict_data, "Decoding across modalities in V5", sub_dir, ylabel, chance_level=chance_level)
 
 
