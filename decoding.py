@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import time
+from sklearn.preprocessing import StandardScaler
 
 
 def permute_labels(labels, gap):
@@ -134,8 +135,13 @@ class Decoder:
                 _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
                 _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
                 for i in range(len(_maps_0)):
-                    self.model.fit(_maps_0[i], labels[task_order[0]])
-                    acc = self.model.score(_maps_1[i], labels[task_order[1]])
+                    # across voxels demeaning
+                    scaler = StandardScaler(with_std=False)
+                    map_0 = (scaler.fit_transform(_maps_0[i].T)).T
+                    map_1 = (scaler.fit_transform(_maps_1[i].T)).T
+
+                    self.model.fit(map_0, labels[task_order[0]])
+                    acc = self.model.score(map_1, labels[task_order[1]])
                     scores[key + region_name] = acc
             return
 
