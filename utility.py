@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import time
 import random
 
@@ -28,3 +29,12 @@ def compute_bootstrap_distribution(n_bootstrap, n_subjects, scores_n_perm, n_sin
     duration = time.time() - start_time
     print("Running models done in " + str(duration) + " seconds")
     return scores_bootstrap
+
+
+def compute_p_val_bootstrap(df_bootstrap, df_group_results):
+    pvals = dict()
+    for modality in df_bootstrap:
+        gv = df_group_results[modality][0]
+        count = len([v for v in df_bootstrap[modality] if v > gv])
+        pvals[modality] = (count+1)/(len(df_bootstrap[modality])+1)
+    return pvals
