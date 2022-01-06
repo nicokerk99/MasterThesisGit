@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import time
+from sklearn.preprocessing import StandardScaler
 
 
 def permute_labels(labels, gap):
@@ -31,6 +32,22 @@ class Decoder:
         self.n_splits = n_splits
         self.seed = seed
         self.n_perm = n_perm
+        self.predictions = dict()
+
+    def return_and_reset_predictions(self, keys):
+        """
+        :param keys: array of strings to set as keys
+        :return: a dictionary containing the amount of predictions done for each class
+        """
+        to_return = self.predictions.copy()
+        self.predictions = dict()
+        for key in keys :
+            self.predictions[key] = 0
+        return to_return
+
+    def update_predictions(self, predictions):
+        for pred in predictions :
+            self.predictions[pred] += 1
 
     def cross_validate(self, brain_map, labels, return_model=False):
         """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
@@ -50,6 +67,8 @@ class Decoder:
             y_train, y_test = labels[train_index], labels[test_index]
 
             self.model.fit(X_train, y_train)
+            predictions = self.model.predict(X_test)
+            self.update_predictions(predictions)
             score = self.model.score(X_test, y_test)
             acc += score
 
@@ -134,8 +153,15 @@ class Decoder:
                 _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
                 _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
                 for i in range(len(_maps_0)):
-                    self.model.fit(_maps_0[i], labels[task_order[0]])
-                    acc = self.model.score(_maps_1[i], labels[task_order[1]])
+                    # across voxels demeaning
+                    scaler = StandardScaler(with_std=False)
+                    map_0 = (scaler.fit_transform(_maps_0[i].T)).T
+                    map_1 = (scaler.fit_transform(_maps_1[i].T)).T
+
+                    self.model.fit(map_0, labels[task_order[0]])
+                    predictions = self.model.predict(map_1)
+                    self.update_predictions(predictions)
+                    acc = self.model.score(map_1, labels[task_order[1]])
                     scores[key + region_name] = acc
             return
 

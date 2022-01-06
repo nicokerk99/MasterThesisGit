@@ -11,7 +11,10 @@ File containing small utility functions
 def average_dicos(dicos):
     dico = dict()
     for key in dicos[0]:
-        dico[key] = np.mean([dic[key] for dic in dicos])
+        if dicos[0][key] is not None :
+            dico[key] = np.mean([dic[key] for dic in dicos])
+        else :
+            dico[key] = None
 
     return dico
 
