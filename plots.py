@@ -14,7 +14,9 @@ class Plotter():
     @cv_scores_dir : directory in which to save plots for the cross validation (plots for the cross 
     validation scores will be saved in : self.plot_dir/cv_scores_dir)
     @p_values_dir : directory in which to save plots for the p-values
-    @perms_scores_dir : directory in which to save plots for the permutations """
+    @perms_scores_dir : directory in which to save plots for the permutations
+    @bootstrap_dir : directory in which to save plots regarding bootstrap
+    @color : color for the different plots (must be one of matplotlib.cm's colormaps) """
 
     def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", p_values_dir="p_values",
                  perms_scores_dir="perms_scores", bootstrap_dir = "bootstrap", color = cm.Spectral):
@@ -34,6 +36,12 @@ class Plotter():
 
 
     def save(self, label, sub_dir, ylabel, xlabel = "subject id"):
+        """ function that adds the legend, title, label axes and saves a plot in self.plot_dir/sub_dir/label.jpg.
+        @param label : the title of the plot and name of the file in which the plot will be saved
+        @param sub_dir : the directory in which the plot will be saved
+        @param ylabel : label for the y axis
+        @param xlabel : label for the x axis """
+
         plt.legend()
         plt.title(label, wrap = True)
         plt.xlabel(xlabel)
@@ -42,54 +50,71 @@ class Plotter():
         plt.close()
 
 
-    def bar_plot(self, dict_data, chance_level=False):
+    def bar_plot(self, dict_data, chance_level):
+        """ plots a dictionnary as a bar plot with index ["Right", "Left"]
+        @param dict_data : the dictionnary containing the data to be plotted
+        @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
+
         plot_df = pd.DataFrame(dict_data, index = ["Right", "Left"])
         plot_df.plot(kind='bar', colormap= self.color)
         if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         
 
     def plot_cv_score(self, df, chance_level=False):
-        """ function to plot the results of the cross validation. these are plotted along the subjects axis
-        @param filename: the file in which the needed dataframe is located """
+        """ function to plot the results of the cross validation.
+        @param df : the dataframe containing the cross val results
+        @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
+
+        ylabel = "cv score"
 
         dict_data = {"audition": [df["aud_V5_R"][0], df["aud_V5_L"][0]],
                      "vision": [df["vis_V5_R"][0], df["vis_V5_L"][0]]}
-        self.bar_plot(dict_data, chance_level=chance_level)
-        self.save("Decoding in V5", self.cv_scores_dir, "cv score")
+        self.bar_plot(dict_data, chance_level)
+        self.save("Decoding in V5", self.cv_scores_dir, ylabel)
 
         dict_data = {"audition": [df["aud_PT_R"][0], df["aud_PT_L"][0]]}
-        self.bar_plot(dict_data, chance_level=chance_level)
-        self.save("Decoding in PT", self.cv_scores_dir, "cv score")
+        self.bar_plot(dict_data, chance_level)
+        self.save("Decoding in PT", self.cv_scores_dir, ylabel)
 
         dict_data = {"audition trained on vision": [df["aud_vis_V5_R"][0], df["aud_vis_V5_L"][0]],
                      "vision trained on audition": [df["vis_aud_V5_R"][0], df["vis_aud_V5_L"][0]]}
-        self.bar_plot(dict_data, chance_level=chance_level)
-        self.save("Decoding across modalities in V5", self.cv_scores_dir, "cv score")
+        self.bar_plot(dict_data, chance_level)
+        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel)
 
 
-    def generate_title(self, label, pval):
-        title = "bootstrap for "
+    def generate_title(self, modality, pval):
+        """ function that generates the title for bootstrap plots
+        @param modality :  the modality (e.g. "aud_vis_V5_R")
+        @param pval : the estimated p-value """
+
         train = ""
-        if label [4:7] in self.translation: train = " when training on "+self.translation[label[4:7]][0]
-        return title + self.translation[label[:3]][1] + " motion in "+ self.translation[label[-1:]] +" " + label[-4:-2] + train +" (estimated p-value = "+str(round(pval, 4))+")"
+        if modality[4:7] in self.translation: train = " when training on "+self.translation[modality[4:7]][0]
+        return "bootstrap for " + self.translation[modality[:3]][1] + " motion in "+ self.translation[modality[-1:]] +" " + modality[-4:-2] + train +" (estimated p-value = "+str(round(pval, 4))+")"
 
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
+        """ function to plot the bootstrap results. we plot a histogram of the bootstrap results for each modality and 
+        add a vertical line that represents the group result for this modality.
+        @param df_bootstrap : the dataframe containing the bootstrap scores
+        @param df_group_results : the dataframe containing the group results
+        @param pvals : a dictionnary containing the estimated p-value for each modality
+        @param n_bins : the numbers of bins for the bootstrap histogram"""
+        
         colors = self.color(np.linspace(0, 1, 10))
         for modality in df_bootstrap:
             color = colors[0] if "aud" == modality[:3] else colors[9]
             plt.hist(df_bootstrap[modality], bins = n_bins, color=color)
             plt.axvline(df_group_results[modality][0], label = "group-level score", color = "green")
-            title = self.generate_title(modality, pvals[modality])
-            self.save(title, self.bootstrap_dir, "bootstrap number", xlabel="score")             
+            self.save(self.generate_title(modality, pvals[modality]), self.bootstrap_dir, "bootstrap number", xlabel="score")             
 
 
-    def plot_perms_scores(self, df, n_perms):
+    def plot_perms_scores(self, df, n_perms, chance_level = False):
         """ function to plot the results of the permutations. these are plotted along the subjects axis.
-        as we often have a ton of permutations, we plot the mean, var, max and min of the permutations scores
-        for each subjects 
-        @param filename: the file in which the needed dataframe is located
-        @param n_perms: the number of permutations """
+        as we often have a ton of permutations, we plot the mean of the permutations scores for each modality 
+        @param df : the dataframe containing the permutations scores
+        @param n_perms : the number of permutations
+        @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
+
         ylabel = "perm score"
 
         audRV5 = [str_to_array(df.iloc[i]["aud_V5_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
@@ -101,11 +126,11 @@ class Plotter():
 
         dict_data = {"audition": map(np.mean, [audRV5, audLV5]),
                      "vision": map(np.mean, [visRV5, visLV5])}
-        self.bar_plot(dict_data, chance_level=True)
+        self.bar_plot(dict_data, chance_level)
         self.save("Decoding in V5", self.perms_scores_dir, ylabel)
 
         dict_data = {"audition": map(np.mean, [audRPT, audLPT])}
-        self.bar_plot(dict_data, chance_level=True)
+        self.bar_plot(dict_data, chance_level)
         self.save("Decoding in PT", self.perms_scores_dir, ylabel)       
 
 
