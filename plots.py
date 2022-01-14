@@ -89,7 +89,7 @@ class Plotter():
 
         train = ""
         if modality[4:7] in self.translation: train = " when training on "+self.translation[modality[4:7]][0]
-        return "bootstrap for " + self.translation[modality[:3]][1] + " motion in "+ self.translation[modality[-1:]] +" " + modality[-4:-2] + train +" (estimated p-value = "+str(round(pval, 4))+")"
+        return "bootstrap for " + self.translation[modality[:3]][1] + " motion in "+ self.translation[modality[-1:]] +" " + modality[-4:-2] + train +" (estimated p-value = "+str(round(pval, 6))+")"
 
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
