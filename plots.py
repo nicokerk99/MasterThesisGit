@@ -105,7 +105,7 @@ class Plotter():
             color = colors[0] if "aud" == modality[:3] else colors[9]
             plt.hist(df_bootstrap[modality], bins = n_bins, color=color)
             plt.axvline(df_group_results[modality][0], label = "group-level score", color = "green")
-            self.save(self.generate_title(modality, pvals[modality]), self.bootstrap_dir, "bootstrap number", xlabel="score")             
+            self.save(self.generate_title(modality, pvals[modality]), self.bootstrap_dir, "density", xlabel="score")
 
 
     def plot_perms_scores(self, df, n_perms, chance_level = False):
