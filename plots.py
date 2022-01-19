@@ -41,7 +41,7 @@ class Plotter():
         @param ylabel : label for the y axis
         @param xlabel : label for the x axis """
 
-        plt.legend()
+        plt.legend(loc="lower center")
         plt.title(label, wrap=True)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -53,7 +53,7 @@ class Plotter():
         @param dict_data : the dictionnary containing the data to be plotted
         @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
 
-        plot_df = pd.DataFrame(dict_data, index=["Right", "Left"])
+        plot_df = pd.DataFrame(dict_data, index=["Left", "Right"])
         plot_df.plot(kind='bar', colormap=self.color)
         if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.xticks(rotation=0)
@@ -63,7 +63,7 @@ class Plotter():
         @param data_list : list containing the data to be plotted
         @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
 
-        plt.bar(["Right", "Left"], data_list, color='purple', width=0.3)
+        plt.bar(["Left", "Right"], data_list, color='purple', width=0.3)
         if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.xticks(rotation=0)
 
@@ -74,23 +74,23 @@ class Plotter():
 
         ylabel = "cv score"
 
-        dict_data = {"audition": [df["aud_V5_R"][0], df["aud_V5_L"][0]],
-                     "vision": [df["vis_V5_R"][0], df["vis_V5_L"][0]]}
+        dict_data = {"audition": [df["aud_V5_L"][0], df["aud_V5_R"][0]],
+                     "vision": [df["vis_V5_L"][0], df["vis_V5_R"][0]]}
         self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
-        dict_data = {"audition": [df["aud_PT_R"][0], df["aud_PT_L"][0]],
-                     "vision": [df["vis_PT_R"][0], df["vis_PT_L"][0]]}
+        dict_data = {"audition": [df["aud_PT_L"][0], df["aud_PT_R"][0]],
+                     "vision": [df["vis_PT_L"][0], df["vis_PT_R"][0]]}
         self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
-        dict_data = [(df["aud_vis_V5_R"][0] + df["vis_aud_V5_R"][0]) / 2,
-                     (df["aud_vis_V5_L"][0] + df["vis_aud_V5_L"][0]) / 2]
+        dict_data = [(df["aud_vis_V5_L"][0] + df["vis_aud_V5_L"][0]) / 2,
+                     (df["aud_vis_V5_R"][0] + df["vis_aud_V5_R"][0]) / 2]
         self.bar_plot_cross_modal(dict_data, chance_level)
         self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
-        dict_data = [(df["aud_vis_PT_R"][0] + df["vis_aud_PT_R"][0]) / 2,
-                     (df["aud_vis_PT_L"][0] + df["vis_aud_PT_L"][0]) / 2]
+        dict_data = [(df["aud_vis_PT_L"][0] + df["vis_aud_PT_L"][0]) / 2,
+                     (df["aud_vis_PT_R"][0] + df["vis_aud_PT_R"][0]) / 2]
         self.bar_plot_cross_modal(dict_data, chance_level)
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
@@ -137,14 +137,14 @@ class Plotter():
         visRPT = [str_to_array(df.iloc[i]["vis_PT_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
         visLPT = [str_to_array(df.iloc[i]["vis_PT_L"][1:-1], n_perms) for i in range(len(self.subject_ids))]
 
-        dict_data = {"audition": map(np.mean, [audRV5, audLV5]),
-                     "vision": map(np.mean, [visRV5, visLV5])}
-        self.bar_plot(dict_data, chance_level)
+        dict_data = {"audition": map(np.mean, [audLV5, audRV5]),
+                     "vision": map(np.mean, [visLV5, visRV5])}
+        self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in V5", self.perms_scores_dir, ylabel)
 
-        dict_data = {"audition": map(np.mean, [audRPT, audLPT]),
-                     "vision": map(np.mean, [visRPT, visLPT])}
-        self.bar_plot(dict_data, chance_level)
+        dict_data = {"audition": map(np.mean, [audLPT, audRPT]),
+                     "vision": map(np.mean, [visLPT, visRPT])}
+        self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in PT", self.perms_scores_dir, ylabel)
 
 
