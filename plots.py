@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 from matplotlib import cm
+from matplotlib.colors import ListedColormap
 import pandas as pd
 import numpy as np
 import os
@@ -19,15 +20,18 @@ class Plotter():
     @color : color for the different plots (must be one of matplotlib.cm's colormaps) """
 
     def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", p_values_dir="p_values",
-                 perms_scores_dir="perms_scores", bootstrap_dir="bootstrap", color=cm.Spectral):
+                 perms_scores_dir="perms_scores", bootstrap_dir="bootstrap"):
         self.plot_dir = plot_dir
         self.subject_ids = subject_ids
         self.cv_scores_dir = cv_scores_dir
         self.p_values_dir = p_values_dir
         self.perms_scores_dir = perms_scores_dir
         self.bootstrap_dir = bootstrap_dir
-        self.color = color
-        self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "R": "right", "L": "left"}
+        self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
+        colors = self.color(np.linspace(0, 1, 3))
+        self.modality_to_color = {"vis" : colors[0], "aud" : colors[2], "cro" : colors[1]}
+        self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "cro": "cross-modal",
+                            "R": "right", "L": "left"}
 
         # create the necessary directories
         for di in [cv_scores_dir, p_values_dir, perms_scores_dir, bootstrap_dir]:
@@ -63,7 +67,7 @@ class Plotter():
         @param data_list : list containing the data to be plotted
         @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
 
-        plt.bar(["Left", "Right"], data_list, color='purple', width=0.3)
+        plt.bar(["Left", "Right"], data_list, color=self.modality_to_color["cro"], width=0.3)
         if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.xticks(rotation=0)
 
@@ -77,21 +81,21 @@ class Plotter():
         dict_data = {"audition": [df["aud_V5_L"][0], df["aud_V5_R"][0]],
                      "vision": [df["vis_V5_L"][0], df["vis_V5_R"][0]]}
         self.bar_plot_within_modal(dict_data, chance_level)
-        self.save("Decoding in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
+        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
         dict_data = {"audition": [df["aud_PT_L"][0], df["aud_PT_R"][0]],
                      "vision": [df["vis_PT_L"][0], df["vis_PT_R"][0]]}
         self.bar_plot_within_modal(dict_data, chance_level)
-        self.save("Decoding in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
+        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
-        dict_data = [(df["aud_vis_V5_L"][0] + df["vis_aud_V5_L"][0]) / 2,
-                     (df["aud_vis_V5_R"][0] + df["vis_aud_V5_R"][0]) / 2]
-        self.bar_plot_cross_modal(dict_data, chance_level)
+        data = [float(df["cross_V5_L"]),
+                float(df["cross_V5_R"])]
+        self.bar_plot_cross_modal(data, chance_level)
         self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
-        dict_data = [(df["aud_vis_PT_L"][0] + df["vis_aud_PT_L"][0]) / 2,
-                     (df["aud_vis_PT_R"][0] + df["vis_aud_PT_R"][0]) / 2]
-        self.bar_plot_cross_modal(dict_data, chance_level)
+        data = [float(df["cross_PT_L"]),
+                float(df["cross_PT_R"])]
+        self.bar_plot_cross_modal(data, chance_level)
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
     def generate_title(self, modality, pval):
@@ -99,10 +103,12 @@ class Plotter():
         @param modality :  the modality (e.g. "aud_vis_V5_R")
         @param pval : the estimated p-value """
 
-        train = ""
-        if modality[4:7] in self.translation: train = " when training on " + self.translation[modality[4:7]][0]
-        return "Bootstrap for " + self.translation[modality[:3]][1] + " motion in " + self.translation[
-            modality[-1:]] + " " + modality[-4:-2] + train + " (estimated p-value = " + str(round(pval, 6)) + ")"
+        if modality[:3] == "cro" :
+            beginning = "Bootstrap for cross-modal decoding in "
+        else :
+            beginning = "Bootstrap for " + self.translation[modality[:3]][1] + " motion in "
+        return beginning + self.translation[modality[-1:]] + " " + modality[-4:-2] \
+               + " (estimated p-value = " + str(round(pval, 6)) + ")"
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
         """ function to plot the bootstrap results. we plot a histogram of the bootstrap results for each modality and 
@@ -112,9 +118,8 @@ class Plotter():
         @param pvals : a dictionnary containing the estimated p-value for each modality
         @param n_bins : the numbers of bins for the bootstrap histogram"""
 
-        colors = self.color(np.linspace(0, 1, 10))
         for modality in df_bootstrap:
-            color = colors[0] if "aud" == modality[:3] else colors[9]
+            color = self.modality_to_color[modality[:3]]
             plt.hist(df_bootstrap[modality], bins=n_bins, color=color)
             plt.axvline(df_group_results[modality][0], label="group-level score", color="green")
             self.save(self.generate_title(modality, pvals[modality]), self.bootstrap_dir, "density", xlabel="score")

@@ -2,6 +2,7 @@ import random
 import numpy as np
 import time
 from sklearn.preprocessing import StandardScaler
+from utility import average_dicos
 
 
 def permute_labels(labels, gap):
@@ -145,10 +146,9 @@ class Decoder:
         :return: a dictionary with the test scores obtained when fitting on one experiment and testing on another,
                 for the different brain regions """
 
-        scores = dict()
-
         def sub(task_order):
-            key = task_order[0] + "_" + task_order[1] + "_"
+            scores = dict()
+            key = "cross_"
             for region_name in regions_names:
                 _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
                 _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
@@ -163,12 +163,12 @@ class Decoder:
                     self.update_predictions(predictions)
                     acc = self.model.score(map_1, labels[task_order[1]])
                     scores[key + region_name] = acc
-            return
+            return scores
 
-        sub(tasks_names)
-        sub(tasks_names[::-1])
+        scores_0 = sub(tasks_names)
+        scores_1 = sub(tasks_names[::-1])
 
-        return scores
+        return average_dicos([scores_0, scores_1])
 
     def produce_permuted_labels(self, labels, n_perm):
         """
