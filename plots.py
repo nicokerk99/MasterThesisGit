@@ -3,6 +3,7 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import os
 
 
@@ -29,7 +30,7 @@ class Plotter():
         self.bootstrap_dir = bootstrap_dir
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
-        self.modality_to_color = {"vis" : colors[0], "aud" : colors[2], "cro" : colors[1]}
+        self.modality_to_color = {"vis" : colors[2], "aud" : colors[0], "cro" : colors[1]}
         self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "cro": "cross-modal",
                             "R": "right", "L": "left"}
 
