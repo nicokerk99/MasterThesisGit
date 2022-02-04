@@ -2,10 +2,19 @@ import numpy as np
 import pandas as pd
 import time
 import random
+import os
 
 """
 File containing small utility functions
 """
+
+
+def create_directory(dir_name):
+    """
+    creates the output directory if not already present
+    """
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
 
 
 def average_dicos(dicos):

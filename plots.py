@@ -30,7 +30,7 @@ class Plotter():
         self.bootstrap_dir = bootstrap_dir
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
-        self.modality_to_color = {"vis" : colors[2], "aud" : colors[0], "cro" : colors[1]}
+        self.modality_to_color = {"vis": colors[2], "aud": colors[0], "cro": colors[1]}
         self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "cro": "cross-modal",
                             "R": "right", "L": "left"}
 
@@ -104,9 +104,9 @@ class Plotter():
         @param modality :  the modality (e.g. "aud_vis_V5_R")
         @param pval : the estimated p-value """
 
-        if modality[:3] == "cro" :
+        if modality[:3] == "cro":
             beginning = "Bootstrap for cross-modal decoding in "
-        else :
+        else:
             beginning = "Bootstrap for " + self.translation[modality[:3]][1] + " motion in "
         return beginning + self.translation[modality[-1:]] + " " + modality[-4:-2] \
                + " (estimated p-value = " + str(round(pval, 6)) + ")"
@@ -152,6 +152,40 @@ class Plotter():
                      "vision": map(np.mean, [visLPT, visRPT])}
         self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in PT", self.perms_scores_dir, ylabel)
+
+    def plot_average_voxel_intensities(self, maps, classes, n_subjects):
+        region = "V5_R"
+        colors = ["red", "tomato", "coral", "orange", "deepskyblue", "cyan", "blue", "royalblue"]
+        n_voxels = maps[0]["vis"][0][region].shape[1]
+        mean_aud = dict()
+        mean_vis = dict()
+
+        for cla in classes:
+            mean_aud[cla] = np.zeros(n_voxels)
+            mean_vis[cla] = np.zeros(n_voxels)
+
+        for i in range(n_subjects):
+            for j, cla in enumerate(classes):
+                mean_vis[cla] += np.mean(maps[i]["vis"][0][region][j * 12:(j + 1) * 12], axis=0) / n_subjects
+                mean_aud[cla] += np.mean(maps[i]["aud"][0][region][j * 12:(j + 1) * 12], axis=0) / n_subjects
+
+        plt.rcParams.update({'font.size': 15})
+        plt.figure(figsize=(12, 8))
+
+        idx = 0
+        for cla in classes:
+            plt.plot(range(n_voxels), mean_vis[cla], label="vis - " + cla, color=colors[idx])
+            idx += 1
+
+        for cla in classes:
+            plt.plot(range(n_voxels), mean_aud[cla], label="aud - " + cla, color=colors[idx])
+            idx += 1
+
+        plt.xlabel("voxel id")
+        plt.ylabel("intensity")
+        plt.title("Average voxel intensities for "+region)
+        plt.legend()
+        plt.savefig("plots/average_voxel_intensities"+region+".png")
 
 
 def str_to_array(str_array, length):
