@@ -137,7 +137,20 @@ class Decoder:
 
         return cv_scores, p_values, scores_perm
 
-    def cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names):
+    def within_modality_decoding(self, maps, labels, subjects_ids, tasks_regions):
+        within_cv_scores = [dict() for _ in subjects_ids]
+        within_p_values = [dict() for _ in subjects_ids]
+        for i, subj_id in enumerate(subjects_ids):
+            # within-modality decoding : training on a task and decoding on other samples from same task
+            for tasks, regions in tasks_regions:
+                cv_sc, p_val, scores_perm = self.classify_tasks_regions(maps[i], labels, tasks, regions, do_pval=False)
+                within_cv_scores[i].update(cv_sc)
+                within_p_values[i].update(p_val)
+            # print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(n_subjects))
+
+        return within_cv_scores
+
+    def unary_cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names):
         """
         :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
@@ -169,6 +182,18 @@ class Decoder:
         scores_1 = sub(tasks_names[::-1])
 
         return average_dicos([scores_0, scores_1])
+
+    def cross_modality_decoding(self, maps, labels, subjects_ids, tasks_regions):
+        cross_cv_scores = [dict() for _ in subjects_ids]
+        cross_p_values = [dict() for _ in subjects_ids]
+        for i, subj_id in enumerate(subjects_ids):
+            # cross-modal decoding : training on a task and decoding on samples from another task
+            for tasks, regions in tasks_regions:
+                scores_cross_mod = self.unary_cross_modal_decoding(maps[i], labels, tasks, regions)
+                cross_cv_scores[i].update(scores_cross_mod)
+            # print("Cross-modal decoding done for subject "+str(subj_id)+"/"+str(n_subjects))
+
+        return cross_cv_scores
 
     def produce_permuted_labels(self, labels, n_perm):
         """

@@ -2,14 +2,6 @@ import pandas as pd
 import os
 
 
-def create_directory(dir_name):
-    """
-    creates the output directory if not already present
-    """
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-
-
 def save_dicts(filename, dicos, cols, index):
     """
     Function to save a list of dictionaries for scores of different experiments in a csv file
