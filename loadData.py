@@ -1,6 +1,7 @@
 from nilearn.image import load_img
 from nilearn.plotting import plot_glass_brain
 from masks import *
+import pandas as pd
 
 
 def get_maps(id_subjects, folder_name):
@@ -54,3 +55,20 @@ def load_full_data(subjects_ids, length_one_modality, maps_folder="brain_maps", 
         del masks  # to relieve memory
 
     return maps_masked
+
+
+def retrieve_cv_scores(out_directory):
+    # joining dataframes in prevision of plotting
+    cv_within_df = pd.read_csv(out_directory+"/group_scores_within.csv", index_col=0)
+    cv_cross_df = pd.read_csv(out_directory+"/group_scores_cross.csv", index_col=0)
+    for col in cv_cross_df.columns: cv_within_df[col] = cv_cross_df[col]
+
+    return cv_within_df
+
+
+def retrieve_bootstrap_scores(out_directory):
+    bootstrap_within_df = pd.read_csv(out_directory+"/bootstraps_within.csv", index_col=0)
+    bootstrap_cross_df = pd.read_csv(out_directory+"/bootstraps_cross.csv", index_col=0)
+    for col in bootstrap_cross_df.columns: bootstrap_within_df[col] = bootstrap_cross_df[col]
+
+    return bootstrap_within_df
