@@ -25,7 +25,8 @@ class Decoder:
     @n_classes : the number of classes that will be potentially be predicted
     @n_splits : number of folds for cross validation
     @seed : random seed to make sure each time we run the code, we obtain the same results
-    @n_perm : number of permutations to make when inspecting significance """
+    @n_perm : number of permutations to make when inspecting significance
+    @masks_exist : list of dictionaries which tells for each subject which masks are present or not"""
 
     def __init__(self, model, n_classes, n_splits, seed, n_perm):
         self.model = model
@@ -34,6 +35,10 @@ class Decoder:
         self.seed = seed
         self.n_perm = n_perm
         self.predictions = dict()
+        self.masks_exist = None
+
+    def set_masks_exist(self, masks_exist):
+        self.masks_exist = masks_exist
 
     def return_and_reset_predictions(self, keys):
         """
