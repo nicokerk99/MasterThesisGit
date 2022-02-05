@@ -15,7 +15,7 @@ def save_dicts(filename, dicos, cols, index):
         df = df.append(dico, ignore_index=True)
 
     df.index = index
-    df.to_csv("out/" + filename)
+    df.to_csv(filename)
 
 
 def save_dicts_perms(filename, dicos, index):
@@ -27,4 +27,4 @@ def save_dicts_perms(filename, dicos, index):
     """
     df = pd.DataFrame(dicos)
     df.index = index
-    df.to_csv("out/" + filename)
+    df.to_csv(filename)
