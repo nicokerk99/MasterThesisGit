@@ -61,11 +61,11 @@ def load_full_data(subjects_ids, length_one_modality, maps_folder="brain_maps", 
     for i, subj_id in enumerate(subjects_ids):
         t_maps, beta_maps = get_maps([subj_id], maps_folder, is_from_mohamed)
         masks, masks_present = get_masks([subj_id], folder_name=masks_folder, plot=False)
-        maps = apply_mask_to_maps(t_maps, masks, masks_exist)
+        maps = apply_mask_to_maps(t_maps, masks, masks_present)
         maps_masked[i]["vis"] = get_part_of_maps(maps, 0, length_one_modality,
-                                                 masks_exist)  # maps acquired for the vision experiment
+                                                 masks_present)  # maps acquired for the vision experiment
         maps_masked[i]["aud"] = get_part_of_maps(maps, length_one_modality, 2 * length_one_modality,
-                                                 masks_exist)  # maps acquired for the audition experiment
+                                                 masks_present)  # maps acquired for the audition experiment
         masks_exist[i] = masks_present[0]
         del t_maps
         del beta_maps
