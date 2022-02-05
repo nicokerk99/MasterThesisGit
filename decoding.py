@@ -3,8 +3,8 @@ import numpy as np
 import time
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
-from utility import average_dicos
 from metrics import accuracy
+from utility import average_dicos
 
 
 def permute_labels(labels, gap):
@@ -36,26 +36,10 @@ class Decoder:
         self.n_splits = n_splits
         self.seed = seed
         self.n_perm = n_perm
-        self.predictions = dict()
         self.masks_exist = None
 
     def set_masks_exist(self, masks_exist):
         self.masks_exist = masks_exist
-
-    def return_and_reset_predictions(self, keys):
-        """
-        :param keys: array of strings to set as keys
-        :return: a dictionary containing the amount of predictions done for each class
-        """
-        to_return = self.predictions.copy()
-        self.predictions = dict()
-        for key in keys :
-            self.predictions[key] = 0
-        return to_return
-
-    def update_predictions(self, predictions):
-        for pred in predictions :
-            self.predictions[pred] += 1
 
     def cross_validate(self, brain_map, labels, return_model=False):
         """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
@@ -164,7 +148,7 @@ class Decoder:
                 for the different brain regions """
 
         def sub(task_order):
-            scores = dict()
+            conf_matrix = dict()
             key = "cross_"
             for region_name in regions_names:
                 _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
@@ -177,26 +161,26 @@ class Decoder:
 
                     self.model.fit(map_0, labels[task_order[0]])
                     predictions = self.model.predict(map_1)
-                    self.update_predictions(predictions)
-                    acc = self.model.score(map_1, labels[task_order[1]])
-                    scores[key + region_name] = acc
-            return scores
+                    conf_matrix[key + region_name] = confusion_matrix(labels[task_order[1]], predictions)
+            return conf_matrix
 
-        scores_0 = sub(tasks_names)
-        scores_1 = sub(tasks_names[::-1])
-
-        return average_dicos([scores_0, scores_1])
+        cfm_0 = sub(tasks_names)
+        cfm_1 = sub(tasks_names[::-1])
+        for key in cfm_0:
+            cfm_0[key] += cfm_1[key]
+        
+        return cfm_0
 
     def cross_modality_decoding(self, maps, labels, subjects_ids, tasks_regions):
-        cross_cv_scores = [dict() for _ in subjects_ids]
+        cross_conf_matrixes = [dict() for _ in subjects_ids]
 
         for i, subj_id in enumerate(subjects_ids):
             # cross-modal decoding : training on a task and decoding on samples from another task
             for tasks, regions in tasks_regions:
-                scores_cross_mod = self.unary_cross_modal_decoding(maps[i], labels, tasks, regions)
-                cross_cv_scores[i].update(scores_cross_mod)
+                cross_cf = self.unary_cross_modal_decoding(maps[i], labels, tasks, regions)
+                cross_conf_matrixes[i].update(cross_cf)
 
-        return cross_cv_scores
+        return cross_conf_matrixes
 
     def produce_permuted_labels(self, labels, n_perm):
         """
@@ -214,23 +198,23 @@ class Decoder:
 
     def score_bootstrapped_permutations(self, n_single_perm, labels, tasks_regions, maps, n_subjects, within_modality):
         start_time = time.time()
-        scores_n_perm = [None]*n_subjects
+        cfm_n_perm = [None]*n_subjects
         for i in range(n_subjects):
             labels_shuffled_vis = self.produce_permuted_labels(labels, n_single_perm) # repeating for each subject, such that we don't obtain same permutations
             labels_shuffled_aud = self.produce_permuted_labels(labels, n_single_perm)
-            scores_dicts = [dict() for _ in range(n_single_perm)]
+            cfm_dicts = [dict() for _ in range(n_single_perm)]
             for j in range(n_single_perm) :
                 labels_dico = {"vis" : labels_shuffled_vis[j], "aud" : labels_shuffled_aud[j]}
                 for task_regions in tasks_regions :
                     tasks, regions = task_regions
                     if within_modality :
-                        cv_sc, _, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, do_pval=False)
+                        _, cf, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, do_pval=False)
                     else :
-                        cv_sc = self.unary_cross_modal_decoding(maps[i], labels_dico, tasks, regions)
-                    scores_dicts[j].update(cv_sc)
+                        cf = self.unary_cross_modal_decoding(maps[i], labels_dico, tasks, regions)
+                    cfm_dicts[j].update(cf)
 
-            scores_n_perm[i] = scores_dicts
+            cfm_n_perm[i] = cfm_dicts
 
         duration = time.time()-start_time
         print("Running models done in "+str(duration)+" seconds")
-        return scores_n_perm
+        return cfm_n_perm
