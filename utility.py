@@ -19,11 +19,16 @@ def create_directory(dir_name):
 
 def average_dicos(dicos):
     dico = dict()
+    counter = dict()
     for key in dicos[0]:
-        if dicos[0][key] is not None :
-            dico[key] = np.mean([dic[key] for dic in dicos])
-        else :
-            dico[key] = None
+        counter[key] = 0
+        dico[key] = 0
+        for dictio in dicos :
+            if key in dictio :
+                dico[key] += dictio[key]
+                counter[key] += 1
+        if counter[key] > 0 :
+            dico[key] /= counter[key]
 
     return dico
 

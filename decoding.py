@@ -4,7 +4,6 @@ import time
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
 from metrics import accuracy
-from utility import average_dicos
 
 
 def permute_labels(labels, gap):
@@ -106,7 +105,7 @@ class Decoder:
             p_val, conf_matrix_perm = self.p_value_random_permutations(brain_maps[0], labels, base_score)
         return p_val, conf_matrix, conf_matrix_perm
 
-    def classify_tasks_regions(self, brain_maps, labels, tasks_names, regions_names, do_pval=True):
+    def classify_tasks_regions(self, brain_maps, labels, tasks_names, regions_names, id_subj, do_pval=True):
         """
         :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
@@ -121,9 +120,10 @@ class Decoder:
 
         for task_name in tasks_names:
             for region_name in regions_names:
-                _maps = [maps[region_name] for maps in brain_maps[task_name]]
-                key = task_name + "_" + region_name
-                p_values[key], conf_matrixes[key], conf_matrixes_perms[key] = self.classify(_maps, labels[task_name], do_pval)
+                if self.masks_exist[id_subj][region_name]:
+                    _maps = [maps[region_name] for maps in brain_maps[task_name]]
+                    key = task_name + "_" + region_name
+                    p_values[key], conf_matrixes[key], conf_matrixes_perms[key] = self.classify(_maps, labels[task_name], do_pval)
 
         return p_values, conf_matrixes, conf_matrixes_perms
 
@@ -132,13 +132,13 @@ class Decoder:
         for i, subj_id in enumerate(subjects_ids):
             # within-modality decoding : training on a task and decoding on other samples from same task
             for tasks, regions in tasks_regions:
-                _, cf, _ = self.classify_tasks_regions(maps[i], labels, tasks, regions, do_pval=False)
+                _, cf, _ = self.classify_tasks_regions(maps[i], labels, tasks, regions, i, do_pval=False)
                 conf_matrixes[i].update(cf)
             # print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(n_subjects))
 
         return conf_matrixes
 
-    def unary_cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names):
+    def unary_cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names, id_subj):
         """
         :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
@@ -151,19 +151,20 @@ class Decoder:
             conf_matrix = dict()
             key = "cross_"
             for region_name in regions_names:
-                _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
-                _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
-                for i in range(len(_maps_0)):
-                    # across voxels demeaning
-                    scaler = StandardScaler(with_std=False)
-                    map_0 = (scaler.fit_transform(_maps_0[i].T)).T
-                    map_1 = (scaler.fit_transform(_maps_1[i].T)).T
+                if self.masks_exist[id_subj][region_name] :
+                    _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
+                    _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
+                    for i in range(len(_maps_0)):
+                        # across voxels demeaning
+                        scaler = StandardScaler(with_std=False)
+                        map_0 = (scaler.fit_transform(_maps_0[i].T)).T
+                        map_1 = (scaler.fit_transform(_maps_1[i].T)).T
 
-                    self.model.fit(map_0, labels[task_order[0]])
-                    predictions = self.model.predict(map_1)
-                    conf_matrix[key + region_name] = confusion_matrix(labels[task_order[1]], predictions)
+                        self.model.fit(map_0, labels[task_order[0]])
+                        predictions = self.model.predict(map_1)
+                        conf_matrix[key + region_name] = confusion_matrix(labels[task_order[1]], predictions)
             return conf_matrix
-
+            
         cfm_0 = sub(tasks_names)
         cfm_1 = sub(tasks_names[::-1])
         for key in cfm_0:
@@ -177,7 +178,7 @@ class Decoder:
         for i, subj_id in enumerate(subjects_ids):
             # cross-modal decoding : training on a task and decoding on samples from another task
             for tasks, regions in tasks_regions:
-                cross_cf = self.unary_cross_modal_decoding(maps[i], labels, tasks, regions)
+                cross_cf = self.unary_cross_modal_decoding(maps[i], labels, tasks, regions, i)
                 cross_conf_matrixes[i].update(cross_cf)
 
         return cross_conf_matrixes
@@ -208,9 +209,9 @@ class Decoder:
                 for task_regions in tasks_regions :
                     tasks, regions = task_regions
                     if within_modality :
-                        _, cf, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, do_pval=False)
+                        _, cf, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, i, do_pval=False)
                     else :
-                        cf = self.unary_cross_modal_decoding(maps[i], labels_dico, tasks, regions)
+                        cf = self.unary_cross_modal_decoding(maps[i], labels_dico, tasks, regions, i)
                     cfm_dicts[j].update(cf)
 
             cfm_n_perm[i] = cfm_dicts
