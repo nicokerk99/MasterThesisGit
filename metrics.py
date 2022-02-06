@@ -3,18 +3,29 @@ import pandas as pd
 from savingOutputs import save_dicts
 
 
-def compute_metric(filename, subject_ids, metric, mode, ret = False):
+def compute_metric(filename, subjects_ids, metric, mode, ret = False):
     confusion_matrixes = pd.read_csv(filename+"confusion_matrixes_"+mode+".csv", index_col=0)
-    score = [dict() for _ in subject_ids] 
+    score = [dict() for _ in subjects_ids] 
     for modality in confusion_matrixes:
-        for i, subj_id in enumerate(subject_ids):
+        for i, subj_id in enumerate(subjects_ids):
             cf = confusion_matrixes[modality][subj_id].replace("[","").replace("]","").replace("\n","")
             if mode == "within" : cf = cf.split('.')[:-1]
             else : cf = [i for i in cf.split(' ') if i != '']
             cf = np.asarray(list(map(int, cf))).reshape(4,4)
             score[i][modality] = metric["function"](cf)
-    save_dicts(filename + metric["name"] +"_" + mode + ".csv", score, list(score[0].keys()), subject_ids)
+    save_dicts(filename + metric["name"] +"_" + mode + ".csv", score, list(score[0].keys()), subjects_ids)
     if ret : return score
+
+
+def compute_accuracy_bootstrap(n_subjects, n_single_perm, confusion_matrixes_bootstrap):
+    scores = [0]*n_subjects
+    for i in range(n_subjects):
+        scores[i] = [dict() for _ in range(n_single_perm)]
+        for j in range(n_single_perm):
+            cfm_bootstrap = confusion_matrixes_bootstrap[i][j]
+            for modality in cfm_bootstrap:
+                scores[i][j][modality] = accuracy(cfm_bootstrap[modality])
+    return scores
 
 
 def accuracy(confusion_matrix):

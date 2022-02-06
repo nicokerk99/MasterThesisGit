@@ -21,13 +21,10 @@ class Plotter():
     @bootstrap_dir : directory in which to save plots regarding bootstrap
     @color : color for the different plots (must be one of matplotlib.cm's colormaps) """
 
-    def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", p_values_dir="p_values",
-                 perms_scores_dir="perms_scores", bootstrap_dir="bootstrap"):
+    def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", bootstrap_dir="bootstrap"):
         self.plot_dir = plot_dir
         self.subject_ids = subject_ids
         self.cv_scores_dir = cv_scores_dir
-        self.p_values_dir = p_values_dir
-        self.perms_scores_dir = perms_scores_dir
         self.bootstrap_dir = bootstrap_dir
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
@@ -37,7 +34,7 @@ class Plotter():
                             "R": "right", "L": "left"}
 
         # create the necessary directories
-        for di in [cv_scores_dir, p_values_dir, perms_scores_dir, bootstrap_dir]:
+        for di in [cv_scores_dir, bootstrap_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
