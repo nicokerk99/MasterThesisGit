@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import os
+from utility import *
 
 
 class Plotter():
@@ -31,6 +32,7 @@ class Plotter():
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
         self.modality_to_color = {"vis": colors[2], "aud": colors[0], "cro": colors[1]}
+        self.name_to_color = {"Vision": colors[2], "Audition": colors[0], "Cross-modal": colors[1]}
         self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "cro": "cross-modal",
                             "R": "right", "L": "left"}
 
@@ -41,18 +43,20 @@ class Plotter():
 
         plt.rcParams.update({'font.size': 15})
 
-    def save(self, label, sub_dir, ylabel, xlabel="subject id"):
+    def save(self, label, sub_dir, ylabel, xlabel="subject id", legend=True):
         """ function that adds the legend, title, label axes and saves a plot in self.plot_dir/sub_dir/label.jpg.
         @param label : the title of the plot and name of the file in which the plot will be saved
         @param sub_dir : the directory in which the plot will be saved
         @param ylabel : label for the y axis
-        @param xlabel : label for the x axis """
+        @param xlabel : label for the x axis
+        @param legend : boolean to tell if need of a legend or not """
 
-        plt.legend(loc="lower center")
+        if legend :
+            plt.legend(loc="lower center")
         plt.title(label, wrap=True)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg")
+        plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight')
         plt.close()
 
     def bar_plot_within_modal(self, dict_data, chance_level):
@@ -104,29 +108,29 @@ class Plotter():
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
     def bar_plot_with_points(self, df, chance_level):
-        if len(df.columns) == 4:
-            df.columns = ["audition L", "vision L", "audition R", "vision R"]
-            colors = [self.modality_to_color["aud"], self.modality_to_color["vis"],
-                      self.modality_to_color["aud"], self.modality_to_color["vis"]]
-        else:
-            df.columns = ["L", "R"]
-            colors = [self.modality_to_color["cro"], self.modality_to_color["cro"]]
-
-        plt.figure(figsize=(12, 12))
+        plt.figure(figsize=(10, 10))
         # Draw the bar chart
-        ax = sns.barplot(
+        ax = sns.catplot(
             data=df,
-            palette=colors,
+            kind="bar",
+            ci=None,
+            x="Region",
+            y="Score",
+            hue="Modality",
+            palette=self.name_to_color,
+            alpha=.7, height=6
+        )
+        g = sns.swarmplot(
+            data=df,
+            x="Region",
+            y="Score",
+            hue="Modality",
+            dodge=True,
+            palette=self.name_to_color,
             alpha=0.7,
+            size=10
         )
-        sns.stripplot(
-            data=df,
-            edgecolor="black",
-            linewidth=.75,
-            ax=ax,
-            palette=colors,
-            size=15,
-        )
+        g.legend_.remove()
 
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
@@ -137,21 +141,21 @@ class Plotter():
         @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
         ylabel = "CV score"
 
-        df_within_V5 = df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]]
+        df_within_V5 = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]])
         self.bar_plot_with_points(df_within_V5, chance_level)
-        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis")
+        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-        df_within_PT = df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]]
+        df_within_PT = verbose_dataframe(df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]])
         self.bar_plot_with_points(df_within_PT, chance_level)
-        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis")
+        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-        df_cross_V5 = df[["cross_V5_L", "cross_V5_R"]]
+        df_cross_V5 = verbose_dataframe(df[["cross_V5_L", "cross_V5_R"]])
         self.bar_plot_with_points(df_cross_V5, chance_level)
-        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis")
+        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-        df_cross_PT = df[["cross_PT_L", "cross_PT_R"]]
+        df_cross_PT = verbose_dataframe(df[["cross_PT_L", "cross_PT_R"]])
         self.bar_plot_with_points(df_cross_PT, chance_level)
-        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis")
+        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
     def generate_title(self, modality, pval):
         """ function that generates the title for bootstrap plots
