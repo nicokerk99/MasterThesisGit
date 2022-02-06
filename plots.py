@@ -117,6 +117,7 @@ class Plotter():
         ax = sns.barplot(
             data=df,
             palette=colors,
+            alpha=0.7,
         )
         sns.stripplot(
             data=df,
@@ -124,6 +125,7 @@ class Plotter():
             linewidth=.75,
             ax=ax,
             palette=colors,
+            size=15,
         )
 
         if chance_level:
