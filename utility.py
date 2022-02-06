@@ -28,7 +28,7 @@ def average_dicos(dicos):
                 dico[key] += dictio[key]
                 counter[key] += 1
         if counter[key] > 0 :
-            dico[key] /= counter[key]
+            dico[key] = dico[key]/counter[key]
 
     return dico
 

@@ -39,6 +39,8 @@ class Plotter():
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
+        plt.rcParams.update({'font.size': 15})
+
     def save(self, label, sub_dir, ylabel, xlabel="subject id"):
         """ function that adds the legend, title, label axes and saves a plot in self.plot_dir/sub_dir/label.jpg.
         @param label : the title of the plot and name of the file in which the plot will be saved
@@ -60,7 +62,8 @@ class Plotter():
 
         plot_df = pd.DataFrame(dict_data, index=["Left", "Right"])
         plot_df.plot(kind='bar', colormap=self.color)
-        if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
+        if chance_level:
+            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.xticks(rotation=0)
 
     def bar_plot_cross_modal(self, data_list, chance_level):
@@ -69,7 +72,8 @@ class Plotter():
         @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
 
         plt.bar(["Left", "Right"], data_list, color=self.modality_to_color["cro"], width=0.3)
-        if chance_level: plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
+        if chance_level:
+            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
         plt.xticks(rotation=0)
 
     def plot_cv_score(self, df, chance_level=False):
@@ -77,7 +81,7 @@ class Plotter():
         @param df : the dataframe containing the cross val results
         @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
 
-        ylabel = "cv score"
+        ylabel = "CV score"
 
         dict_data = {"audition": [df["aud_V5_L"][0], df["aud_V5_R"][0]],
                      "vision": [df["vis_V5_L"][0], df["vis_V5_R"][0]]}
@@ -98,6 +102,54 @@ class Plotter():
                 float(df["cross_PT_R"])]
         self.bar_plot_cross_modal(data, chance_level)
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
+
+    def bar_plot_with_points(self, df, chance_level):
+        if len(df.columns) == 4:
+            df.columns = ["audition L", "vision L", "audition R", "vision R"]
+            colors = [self.modality_to_color["aud"], self.modality_to_color["vis"],
+                      self.modality_to_color["aud"], self.modality_to_color["vis"]]
+        else:
+            df.columns = ["L", "R"]
+            colors = [self.modality_to_color["aud"], self.modality_to_color["vis"]]
+
+        plt.figure(figsize=(12, 12))
+        # Draw the bar chart
+        ax = sns.barplot(
+            data=df,
+            palette=colors,
+        )
+        sns.stripplot(
+            data=df,
+            edgecolor="black",
+            linewidth=.75,
+            ax=ax,
+            palette=colors,
+        )
+
+        if chance_level:
+            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
+
+    def plot_cv_score_with_points(self, df, chance_level=False):
+        """ function to plot the results of the cross validation, with individual points.
+        @param df : the dataframe containing the cross val results
+        @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
+        ylabel = "CV score"
+
+        df_within_V5 = df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]]
+        self.bar_plot_with_points(df_within_V5, chance_level)
+        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis")
+
+        df_within_PT = df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]]
+        self.bar_plot_with_points(df_within_PT, chance_level)
+        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis")
+
+        df_cross_V5 = df[["cross_V5_L", "cross_V5_R"]]
+        self.bar_plot_with_points(df_cross_V5, chance_level)
+        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis")
+
+        df_cross_PT = df[["cross_PT_L", "cross_PT_R"]]
+        self.bar_plot_with_points(df_cross_PT, chance_level)
+        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis")
 
     def generate_title(self, modality, pval):
         """ function that generates the title for bootstrap plots
@@ -153,39 +205,43 @@ class Plotter():
         self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in PT", self.perms_scores_dir, ylabel)
 
-    def plot_average_voxel_intensities(self, maps, classes, n_subjects):
-        region = "V5_R"
-        colors = ["red", "tomato", "coral", "orange", "deepskyblue", "cyan", "blue", "royalblue"]
-        n_voxels = maps[0]["vis"][0][region].shape[1]
-        mean_aud = dict()
-        mean_vis = dict()
+    def plot_confusion_matrix(self):
+        pass
 
-        for cla in classes:
-            mean_aud[cla] = np.zeros(n_voxels)
-            mean_vis[cla] = np.zeros(n_voxels)
 
-        for i in range(n_subjects):
-            for j, cla in enumerate(classes):
-                mean_vis[cla] += np.mean(maps[i]["vis"][0][region][j * 12:(j + 1) * 12], axis=0) / n_subjects
-                mean_aud[cla] += np.mean(maps[i]["aud"][0][region][j * 12:(j + 1) * 12], axis=0) / n_subjects
+def plot_average_voxel_intensities(maps, classes, n_subjects):
+    region = "V5_R"
+    colors = ["red", "tomato", "coral", "orange", "deepskyblue", "cyan", "blue", "royalblue"]
+    n_voxels = maps[0]["vis"][0][region].shape[1]
+    mean_aud = dict()
+    mean_vis = dict()
 
-        plt.rcParams.update({'font.size': 15})
-        plt.figure(figsize=(12, 8))
+    for cla in classes:
+        mean_aud[cla] = np.zeros(n_voxels)
+        mean_vis[cla] = np.zeros(n_voxels)
 
-        idx = 0
-        for cla in classes:
-            plt.plot(range(n_voxels), mean_vis[cla], label="vis - " + cla, color=colors[idx])
-            idx += 1
+    for i in range(n_subjects):
+        for j, cla in enumerate(classes):
+            mean_vis[cla] += np.mean(maps[i]["vis"][0][region][j * 12:(j + 1) * 12], axis=0) / n_subjects
+            mean_aud[cla] += np.mean(maps[i]["aud"][0][region][j * 12:(j + 1) * 12], axis=0) / n_subjects
 
-        for cla in classes:
-            plt.plot(range(n_voxels), mean_aud[cla], label="aud - " + cla, color=colors[idx])
-            idx += 1
+    plt.rcParams.update({'font.size': 15})
+    plt.figure(figsize=(12, 8))
 
-        plt.xlabel("voxel id")
-        plt.ylabel("intensity")
-        plt.title("Average voxel intensities for "+region)
-        plt.legend()
-        plt.savefig("plots/average_voxel_intensities"+region+".png")
+    idx = 0
+    for cla in classes:
+        plt.plot(range(n_voxels), mean_vis[cla], label="vis - " + cla, color=colors[idx])
+        idx += 1
+
+    for cla in classes:
+        plt.plot(range(n_voxels), mean_aud[cla], label="aud - " + cla, color=colors[idx])
+        idx += 1
+
+    plt.xlabel("voxel id")
+    plt.ylabel("intensity")
+    plt.title("Average voxel intensities for " + region)
+    plt.legend()
+    plt.savefig("plots/average_voxel_intensities" + region + ".png")
 
 
 def str_to_array(str_array, length):
