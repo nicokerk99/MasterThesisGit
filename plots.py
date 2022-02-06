@@ -108,7 +108,11 @@ class Plotter():
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
     def bar_plot_with_points(self, df, chance_level):
-        plt.figure(figsize=(10, 10))
+        if df["Region"].nunique() <= 2 :
+            plt.figure(figsize=(10, 10))
+        else :
+            plt.figure(figsize=(23, 10))
+
         # Draw the bar chart
         ax = sns.catplot(
             data=df,
@@ -118,17 +122,29 @@ class Plotter():
             y="Score",
             hue="Modality",
             palette=self.name_to_color,
-            alpha=.7, height=6
+            alpha=.5,
         )
-        g = sns.swarmplot(
+        g = sns.stripplot(
             data=df,
             x="Region",
             y="Score",
             hue="Modality",
             dodge=True,
             palette=self.name_to_color,
-            alpha=0.7,
-            size=10
+            alpha=0.6,
+            size=7
+        )
+        ax = sns.barplot(
+            data=df,
+            ci="sd",
+            capsize=0.1,
+            errcolor="darkslategrey",
+            errwidth=2.5,
+            x="Region",
+            y="Score",
+            hue="Modality",
+            palette=self.name_to_color,
+            alpha=.5,
         )
         g.legend_.remove()
 
@@ -148,6 +164,11 @@ class Plotter():
         df_within_PT = verbose_dataframe(df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]])
         self.bar_plot_with_points(df_within_PT, chance_level)
         self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
+
+        df_within_all = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R",
+                                              "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]])
+        self.bar_plot_with_points(df_within_all, chance_level)
+        self.save("Decoding within modality", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
         df_cross_V5 = verbose_dataframe(df[["cross_V5_L", "cross_V5_R"]])
         self.bar_plot_with_points(df_cross_V5, chance_level)
