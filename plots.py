@@ -110,7 +110,7 @@ class Plotter():
                       self.modality_to_color["aud"], self.modality_to_color["vis"]]
         else:
             df.columns = ["L", "R"]
-            colors = [self.modality_to_color["aud"], self.modality_to_color["vis"]]
+            colors = [self.modality_to_color["cro"], self.modality_to_color["cro"]]
 
         plt.figure(figsize=(12, 12))
         # Draw the bar chart
