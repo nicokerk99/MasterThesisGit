@@ -58,30 +58,30 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
 
 
 def verbose_dataframe(df, nb_rows=23):
-    column_names=["Modality", "Region", "Score"]
+    column_names = ["Modality", "Region", "Score"]
     vb_df = pd.DataFrame(columns=column_names)
     for entry in df :
         keywords = entry.split('_')
         for i in range(1, 1+nb_rows):
-            new_entry = dict()
-            if "vis" in keywords :
-                new_entry["Modality"] = "Vision"
-            elif "aud" in keywords :
-                new_entry["Modality"] = "Audition"
-            else:
-                new_entry["Modality"] = "Cross-modal"
-            new_entry["Region"] = "V5 " if "V5" in keywords else "PT "
-            new_entry["Region"] += "L" if "L" in keywords else "R"
-            new_entry["Score"] = df[entry][i]
-            vb_df = vb_df.append(new_entry, ignore_index=True)
+            if df[entry][i]:
+                new_entry = dict()
+                if "vis" in keywords :
+                    new_entry["Modality"] = "Vision"
+                elif "aud" in keywords :
+                    new_entry["Modality"] = "Audition"
+                else:
+                    new_entry["Modality"] = "Cross-modal"
+                new_entry["Region"] = "V5 " if "V5" in keywords else "PT "
+                new_entry["Region"] += "L" if "L" in keywords else "R"
+                new_entry["Score"] = df[entry][i]
+                vb_df = vb_df.append(new_entry, ignore_index=True)
 
     return vb_df
 
 
-def cfm_string_to_matrix(cfm_string, mode):
+def cfm_string_to_matrix(cfm_string):
     cf = cfm_string.replace("[","").replace("]","").replace("\n","")
-    if mode == "within" : cf = cf.split('.')[:-1]
-    else : cf = [i for i in cf.split(' ') if i != '']
+    cf = cf.split('.')[:-1]
     cf = np.asarray(list(map(int, cf))).reshape(4,4)
     return cf
 
@@ -91,9 +91,7 @@ def compute_group_confusion_matrix(df_cf_matrixes, subjects_ids):
     for modality in df_cf_matrixes:
         gcf = np.zeros((4,4,len(subjects_ids)))
         for i, subj_id in enumerate(subjects_ids):
-            if "cross" in modality : mode = "cross"
-            else : mode = "within"
-            cfm = cfm_string_to_matrix(df_cf_matrixes[modality][subj_id], mode)
+            cfm = cfm_string_to_matrix(df_cf_matrixes[modality][subj_id])
             cfm = cfm/np.sum(cfm)
             for j in range(4):
                 for k in range(4):
