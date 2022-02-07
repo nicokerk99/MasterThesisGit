@@ -1,5 +1,7 @@
+from statistics import mean
 from matplotlib import pyplot as plt
 from matplotlib import cm
+from matplotlib import pylab
 from matplotlib.colors import ListedColormap
 import pandas as pd
 import numpy as np
@@ -21,11 +23,12 @@ class Plotter():
     @bootstrap_dir : directory in which to save plots regarding bootstrap
     @color : color for the different plots (must be one of matplotlib.cm's colormaps) """
 
-    def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", bootstrap_dir="bootstrap"):
+    def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", conf_matrixes_dir = "conf_matrixes", bootstrap_dir="bootstrap"):
         self.plot_dir = plot_dir
         self.subject_ids = subject_ids
         self.cv_scores_dir = cv_scores_dir
         self.bootstrap_dir = bootstrap_dir
+        self.conf_matrixes_dir  = conf_matrixes_dir
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
         self.modality_to_color = {"vis": colors[2], "aud": colors[0], "cro": colors[1]}
@@ -34,7 +37,7 @@ class Plotter():
                             "R": "right", "L": "left"}
 
         # create the necessary directories
-        for di in [cv_scores_dir, bootstrap_dir]:
+        for di in [cv_scores_dir, bootstrap_dir, conf_matrixes_dir]:
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
@@ -175,17 +178,19 @@ class Plotter():
         self.bar_plot_with_points(df_cross_PT, chance_level)
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-    def generate_title(self, modality, pval):
+    def generate_title(self, begin, modality, pval):
         """ function that generates the title for bootstrap plots
         @param modality :  the modality (e.g. "aud_vis_V5_R")
         @param pval : the estimated p-value """
 
         if modality[:3] == "cro":
-            beginning = "Bootstrap for cross-modal decoding in "
+            beginning = begin + " for cross-modal decoding in "
         else:
-            beginning = "Bootstrap for " + self.translation[modality[:3]][1] + " motion in "
-        return beginning + self.translation[modality[-1:]] + " " + modality[-4:-2] \
-               + " (estimated p-value = " + str(round(pval, 6)) + ")"
+            beginning = begin + " for " + self.translation[modality[:3]][1] + " motion in "
+        title = beginning + self.translation[modality[-1:]] + " " + modality[-4:-2]
+        
+        if pval > 0 : return title + " (estimated p-value = " + str(round(pval, 6)) + ")"
+        else : return title
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
         """ function to plot the bootstrap results. we plot a histogram of the bootstrap results for each modality and 
@@ -199,7 +204,8 @@ class Plotter():
             color = self.modality_to_color[modality[:3]]
             plt.hist(df_bootstrap[modality], bins=n_bins, color=color)
             plt.axvline(df_group_results[modality][0], label="group-level score", color="green")
-            self.save(self.generate_title(modality, pvals[modality]), self.bootstrap_dir, "density", xlabel="score")
+            title = self.generate_title("Bootstrap", modality, pvals[modality])
+            self.save(title, self.bootstrap_dir, "density", xlabel="score")
 
     def plot_perms_scores(self, df, n_perms, chance_level=False):
         """ function to plot the results of the permutations. these are plotted along the subjects axis.
@@ -229,8 +235,22 @@ class Plotter():
         self.bar_plot_within_modal(dict_data, chance_level)
         self.save("Decoding in PT", self.perms_scores_dir, ylabel)
 
-    def plot_confusion_matrix(self):
-        pass
+    def plot_group_confusion_matrix(self, group_cfm, classes):
+        for modality in group_cfm:
+            mean_cfm = np.zeros((4,4))
+            var_cfm = np.zeros((4,4))
+            cfm = group_cfm[modality]
+            for i in range(4):
+                for j in range(4):
+                    mean_cfm[i][j] = mean(cfm[i][j])
+                    var_cfm[i][j] = np.var(cfm[i][j])
+
+            for stat, values in zip(["mean", "variance"], [mean_cfm, var_cfm]):
+                df = pd.DataFrame(values, index = classes, columns = classes)
+                pylab.figure(figsize=(8,8))
+                _ = sns.heatmap(df, linewidth = 1, annot = True)
+                title = self.generate_title("Confusion Matrix "+stat, modality, -1)
+                self.save(title, self.conf_matrixes_dir, "true label", "predicted label", False)
 
 
 def plot_average_voxel_intensities(maps, classes, n_subjects):

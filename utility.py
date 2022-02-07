@@ -1,5 +1,4 @@
 import numpy as np
-import pandas
 import pandas as pd
 import time
 import random
@@ -60,7 +59,7 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
 
 def verbose_dataframe(df, nb_rows=23):
     column_names=["Modality", "Region", "Score"]
-    vb_df = pandas.DataFrame(columns=column_names)
+    vb_df = pd.DataFrame(columns=column_names)
     for entry in df :
         keywords = entry.split('_')
         for i in range(1, 1+nb_rows):
@@ -79,3 +78,25 @@ def verbose_dataframe(df, nb_rows=23):
     return vb_df
 
 
+def cfm_string_to_matrix(cfm_string, mode):
+    cf = cfm_string.replace("[","").replace("]","").replace("\n","")
+    if mode == "within" : cf = cf.split('.')[:-1]
+    else : cf = [i for i in cf.split(' ') if i != '']
+    cf = np.asarray(list(map(int, cf))).reshape(4,4)
+    return cf
+
+
+def compute_group_confusion_matrix(df_cf_matrixes, subjects_ids):
+    group_cf = dict()
+    for modality in df_cf_matrixes:
+        gcf = np.zeros((4,4,len(subjects_ids)))
+        for i, subj_id in enumerate(subjects_ids):
+            if "cross" in modality : mode = "cross"
+            else : mode = "within"
+            cfm = cfm_string_to_matrix(df_cf_matrixes[modality][subj_id], mode)
+            cfm = cfm/np.sum(cfm)
+            for j in range(4):
+                for k in range(4):
+                    gcf[j][k][i] = cfm[j][k]
+        group_cf[modality] = gcf
+    return group_cf

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from savingOutputs import save_dicts
+from utility import cfm_string_to_matrix
 
 
 def compute_metric(filename, subjects_ids, metric, mode, ret = False):
@@ -8,10 +9,7 @@ def compute_metric(filename, subjects_ids, metric, mode, ret = False):
     score = [dict() for _ in subjects_ids] 
     for modality in confusion_matrixes:
         for i, subj_id in enumerate(subjects_ids):
-            cf = confusion_matrixes[modality][subj_id].replace("[","").replace("]","").replace("\n","")
-            if mode == "within" : cf = cf.split('.')[:-1]
-            else : cf = [i for i in cf.split(' ') if i != '']
-            cf = np.asarray(list(map(int, cf))).reshape(4,4)
+            cf = cfm_string_to_matrix(confusion_matrixes[modality][subj_id], mode)
             score[i][modality] = metric["function"](cf)
     save_dicts(filename + metric["name"] +"_" + mode + ".csv", score, list(score[0].keys()), subjects_ids)
     if ret : return score
