@@ -4,13 +4,15 @@ from savingOutputs import save_dicts
 from utility import cfm_string_to_matrix
 
 
-def compute_metric(filename, subjects_ids, metric, mode, ret = False):
+def compute_metric(filename, subjects_ids, metric, mode, masks_exist, ret = False):
     confusion_matrixes = pd.read_csv(filename+"confusion_matrixes_"+mode+".csv", index_col=0)
-    masks_exist = pd.read_csv(filename+"masks_exist.csv", index_col=0)
+    #masks_exist = pd.read_csv(filename+"masks_exist.csv", index_col=0)
     score = [dict() for _ in subjects_ids] 
     for modality in confusion_matrixes:
         for i, subj_id in enumerate(subjects_ids):
-            if masks_exist[modality[4:]][subj_id] :
+            spl = modality.split("_")
+            region = spl[1]+"_"+spl[2]
+            if masks_exist[i][region] :
                 cf = cfm_string_to_matrix(confusion_matrixes[modality][subj_id])
                 score[i][modality] = metric["function"](cf)
     save_dicts(filename + metric["name"] +"_" + mode + ".csv", score, list(score[0].keys()), subjects_ids)
