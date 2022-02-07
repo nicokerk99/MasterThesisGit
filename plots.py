@@ -119,7 +119,7 @@ class Plotter():
             y="Score",
             hue="Modality",
             palette=self.name_to_color,
-            alpha=.5,
+            alpha=.7,
         )
         g = sns.stripplot(
             data=df,
@@ -128,7 +128,7 @@ class Plotter():
             hue="Modality",
             dodge=True,
             palette=self.name_to_color,
-            alpha=0.6,
+            alpha=0.4,
             size=7
         )
         ax = sns.barplot(
@@ -141,7 +141,7 @@ class Plotter():
             y="Score",
             hue="Modality",
             palette=self.name_to_color,
-            alpha=.5,
+            alpha=.05,
         )
         g.legend_.remove()
 

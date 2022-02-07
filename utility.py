@@ -59,22 +59,23 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
 
 
 def verbose_dataframe(df, nb_rows=23):
-    column_names=["Modality", "Region", "Score"]
+    column_names = ["Modality", "Region", "Score"]
     vb_df = pandas.DataFrame(columns=column_names)
     for entry in df :
         keywords = entry.split('_')
         for i in range(1, 1+nb_rows):
-            new_entry = dict()
-            if "vis" in keywords :
-                new_entry["Modality"] = "Vision"
-            elif "aud" in keywords :
-                new_entry["Modality"] = "Audition"
-            else:
-                new_entry["Modality"] = "Cross-modal"
-            new_entry["Region"] = "V5 " if "V5" in keywords else "PT "
-            new_entry["Region"] += "L" if "L" in keywords else "R"
-            new_entry["Score"] = df[entry][i]
-            vb_df = vb_df.append(new_entry, ignore_index=True)
+            if df[entry][i]:
+                new_entry = dict()
+                if "vis" in keywords :
+                    new_entry["Modality"] = "Vision"
+                elif "aud" in keywords :
+                    new_entry["Modality"] = "Audition"
+                else:
+                    new_entry["Modality"] = "Cross-modal"
+                new_entry["Region"] = "V5 " if "V5" in keywords else "PT "
+                new_entry["Region"] += "L" if "L" in keywords else "R"
+                new_entry["Score"] = df[entry][i]
+                vb_df = vb_df.append(new_entry, ignore_index=True)
 
     return vb_df
 

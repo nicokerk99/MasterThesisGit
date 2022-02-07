@@ -40,13 +40,14 @@ class Decoder:
     def set_masks_exist(self, masks_exist):
         self.masks_exist = masks_exist
 
-    def cross_validate(self, brain_map, labels, return_model=False):
+    def cross_validate(self, brain_map, labels, return_model=False, brain_map_2=None):
         """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
         'R','R','L','L']
         :param brain_map: list of maps (size n_samples), which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param return_model: boolean to say if we have to return the fitted model
-        :return: the cross-validation score obtained on the data """
+        :param brain_map_2: other brain map for cross modal decoding
+        :return: the sum of confusion matrixes obtained in each fold """
 
         conf_matrix = np.zeros((4,4))
         for ind in range(self.n_splits):
@@ -54,7 +55,10 @@ class Decoder:
             train_index = range(0, len(brain_map))
             train_index = [ind for ind in train_index if ind not in test_index]
 
-            X_train, X_test = brain_map[train_index], brain_map[test_index]
+            if brain_map_2 is None : # within modality decoding
+                X_train, X_test = brain_map[train_index], brain_map[test_index]
+            else : # cross modal decoding
+                X_train, X_test = brain_map[train_index], brain_map_2[test_index]
             y_train, y_test = labels[train_index], labels[test_index]
 
             self.model.fit(X_train, y_train)
@@ -74,7 +78,7 @@ class Decoder:
         :param labels: list of strings (size n_samples), which are the labels
         :param base_score: score obtained with true labels
         :return: the estimated p-value for classification on this data,
-         and permutations scores """
+         and permutations confusion matrixes """
 
         random.seed(self.seed)
         count = 0
@@ -96,7 +100,7 @@ class Decoder:
         :param brain_maps: list (for 1 subject) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param do_pval: boolean to tell if it is needed to estimate a p-value
-        :return: cross-validation score, p-value """
+        :return: cross-validation confusion matrix, p-value """
 
         conf_matrix = self.cross_validate(brain_maps[0], labels)
         base_score = accuracy(conf_matrix)
@@ -138,6 +142,40 @@ class Decoder:
 
         return conf_matrixes
 
+    def unary_cross_modal_CV_decoding(self, brain_maps, labels, tasks_names, regions_names, id_subj):
+        """
+        :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
+        :param labels: list of strings (size n_samples), which are the labels
+        :param tasks_names: list of strings corresponding to the different experiments
+        :param regions_names: list of strings corresponding to the different masks to use
+        :return: a dictionary with the test scores obtained when fitting on one experiment and testing on another,
+                for the different brain regions """
+
+        def sub(task_order):
+            conf_matrix = dict()
+            key = "cross_"
+            for region_name in regions_names:
+                if self.masks_exist[id_subj][region_name] :
+                    _maps_0 = [maps[region_name] for maps in brain_maps[task_order[0]]]
+                    _maps_1 = [maps[region_name] for maps in brain_maps[task_order[1]]]
+                    for i in range(len(_maps_0)):
+                        # across voxels demeaning
+                        scaler = StandardScaler(with_std=False)
+                        map_0 = (scaler.fit_transform(_maps_0[i].T)).T
+                        map_1 = (scaler.fit_transform(_maps_1[i].T)).T
+
+                        conf_mat = self.cross_validate(map_0, labels[task_order[0]], return_model=False,
+                                                       brain_map_2=map_1)
+                        conf_matrix[key + region_name] = conf_mat
+            return conf_matrix
+
+        cfm_0 = sub(tasks_names)
+        cfm_1 = sub(tasks_names[::-1])
+        for key in cfm_0:
+            cfm_0[key] += cfm_1[key]
+
+        return cfm_0
+
     def unary_cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names, id_subj):
         """
         :param brain_maps: list (size n_subjects) of lists (size n_samples) of maps, which are features
@@ -178,7 +216,7 @@ class Decoder:
         for i, subj_id in enumerate(subjects_ids):
             # cross-modal decoding : training on a task and decoding on samples from another task
             for tasks, regions in tasks_regions:
-                cross_cf = self.unary_cross_modal_decoding(maps[i], labels, tasks, regions, i)
+                cross_cf = self.unary_cross_modal_CV_decoding(maps[i], labels, tasks, regions, i)
                 cross_conf_matrixes[i].update(cross_cf)
 
         return cross_conf_matrixes
@@ -211,7 +249,7 @@ class Decoder:
                     if within_modality :
                         _, cf, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, i, do_pval=False)
                     else :
-                        cf = self.unary_cross_modal_decoding(maps[i], labels_dico, tasks, regions, i)
+                        cf = self.unary_cross_modal_CV_decoding(maps[i], labels_dico, tasks, regions, i)
                     cfm_dicts[j].update(cf)
 
             cfm_n_perm[i] = cfm_dicts
