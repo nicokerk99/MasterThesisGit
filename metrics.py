@@ -9,7 +9,8 @@ def compute_metric(filename, subjects_ids, metric, mode, ret = False):
     score = [dict() for _ in subjects_ids] 
     for modality in confusion_matrixes:
         for i, subj_id in enumerate(subjects_ids):
-            if masks_exist[modality[4:]][subj_id] :
+            start = 6 if modality[:5] == "cross" else 4
+            if masks_exist[modality[start:]][subj_id] :
                 cf = confusion_matrixes[modality][subj_id].replace("[","").replace("]","").replace("\n","")
                 if mode == "within" : cf = cf.split('.')[:-1]
                 else : cf = [i for i in cf.split(' ') if i != '']
