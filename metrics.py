@@ -3,14 +3,15 @@ import pandas as pd
 from savingOutputs import save_dicts
 
 
-def compute_metric(filename, subjects_ids, metric, mode, ret = False):
+def compute_metric(filename, subjects_ids, metric, mode, masks_exist, ret = False):
     confusion_matrixes = pd.read_csv(filename+"confusion_matrixes_"+mode+".csv", index_col=0)
-    masks_exist = pd.read_csv(filename+"masks_exist.csv", index_col=0)
+    #masks_exist = pd.read_csv(filename+"masks_exist.csv", index_col=0)
     score = [dict() for _ in subjects_ids] 
     for modality in confusion_matrixes:
         for i, subj_id in enumerate(subjects_ids):
-            start = 6 if modality[:5] == "cross" else 4
-            if masks_exist[modality[start:]][subj_id] :
+            spl = modality.split("_")
+            region = spl[1]+"_"+spl[2]
+            if masks_exist[i][region] :
                 cf = confusion_matrixes[modality][subj_id].replace("[","").replace("]","").replace("\n","")
                 if mode == "within" : cf = cf.split('.')[:-1]
                 else : cf = [i for i in cf.split(' ') if i != '']
