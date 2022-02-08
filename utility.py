@@ -92,7 +92,7 @@ def compute_group_confusion_matrix(df_cf_matrixes, subjects_ids):
         gcf = np.zeros((4,4,len(subjects_ids)))
         for i, subj_id in enumerate(subjects_ids):
             cfm = cfm_string_to_matrix(df_cf_matrixes[modality][subj_id])
-            cfm = cfm/np.sum(cfm)
+            cfm = cfm/np.sum(cfm)*100
             for j in range(4):
                 for k in range(4):
                     gcf[j][k][i] = cfm[j][k]

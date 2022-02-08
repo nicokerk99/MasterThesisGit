@@ -248,7 +248,7 @@ class Plotter():
             for stat, values in zip(["mean", "variance"], [mean_cfm, var_cfm]):
                 df = pd.DataFrame(values, index = classes, columns = classes)
                 pylab.figure(figsize=(8,8))
-                _ = sns.heatmap(df, linewidth = 1, annot = True)
+                _ = sns.heatmap(df, linewidth = 1, annot = True, cmap = cm.YlOrRd)
                 title = self.generate_title("Confusion Matrix "+stat, modality, -1)
                 self.save(title, self.conf_matrixes_dir, "true label", "predicted label", False)
 
