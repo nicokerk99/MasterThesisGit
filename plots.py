@@ -256,7 +256,7 @@ class Plotter():
                 pylab.figure(figsize=(8,8))
                 _ = sns.heatmap(df, linewidth = 1, annot = True, cmap = cm.YlOrRd)
                 title = self.generate_title("Confusion Matrix "+stat, modality, -1)
-                self.save(title, self.conf_matrixes_dir, "true label", "predicted label", False)
+                self.save(title, self.conf_matrixes_dir, "true label", "predicted label", None)
 
 
 def plot_average_voxel_intensities(maps, classes, n_subjects):
