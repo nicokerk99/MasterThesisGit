@@ -21,3 +21,6 @@ brain_maps/
 # plots
 plots*/ 
 *.png
+
+# zimon's helper for moving / unzipping mohamed's brain maps
+move_files.py

@@ -80,6 +80,7 @@ def verbose_dataframe(df, nb_rows=23):
 
 
 def cfm_string_to_matrix(cfm_string):
+    if pd.isna(cfm_string) : return [[np.nan]]
     cf = cfm_string.replace("[","").replace("]","").replace("\n","")
     cf = cf.split('.')[:-1]
     cf = np.asarray(list(map(int, cf))).reshape(4,4)
@@ -89,12 +90,16 @@ def cfm_string_to_matrix(cfm_string):
 def compute_group_confusion_matrix(df_cf_matrixes, subjects_ids):
     group_cf = dict()
     for modality in df_cf_matrixes:
-        gcf = np.zeros((4,4,len(subjects_ids)))
+        number_of_nans = df_cf_matrixes[modality].isnull().sum()
+        gcf = np.zeros((4, 4, len(subjects_ids) - number_of_nans))
+        l = 0
         for i, subj_id in enumerate(subjects_ids):
             cfm = cfm_string_to_matrix(df_cf_matrixes[modality][subj_id])
-            cfm = cfm/np.sum(cfm)*100
-            for j in range(4):
-                for k in range(4):
-                    gcf[j][k][i] = cfm[j][k]
+            if not pd.isna(cfm[0][0]):
+                cfm = cfm/np.sum(cfm)*100
+                for j in range(4):
+                    for k in range(4):
+                        gcf[j][k][l] = cfm[j][k]
+                l += 1
         group_cf[modality] = gcf
     return group_cf
