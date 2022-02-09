@@ -57,12 +57,12 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
     return pvals
 
 
-def verbose_dataframe(df, nb_rows=23):
+def verbose_dataframe(df, subjects_ids):
     column_names = ["Modality", "Region", "Score"]
     vb_df = pd.DataFrame(columns=column_names)
     for entry in df :
         keywords = entry.split('_')
-        for i in range(1, 1+nb_rows):
+        for i in subjects_ids:
             if df[entry][i]:
                 new_entry = dict()
                 if "vis" in keywords :

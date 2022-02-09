@@ -163,24 +163,24 @@ class Plotter():
         @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
         ylabel = "CV score"
 
-        df_within_V5 = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]])
+        df_within_V5 = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]], self.subject_ids)
         self.bar_plot_with_points(df_within_V5, chance_level)
         self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-        df_within_PT = verbose_dataframe(df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]])
+        df_within_PT = verbose_dataframe(df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]], self.subject_ids)
         self.bar_plot_with_points(df_within_PT, chance_level)
         self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
         df_within_all = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R",
-                                              "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]])
+                                              "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]], self.subject_ids)
         self.bar_plot_with_points(df_within_all, chance_level)
         self.save("Decoding within modality", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-        df_cross_V5 = verbose_dataframe(df[["cross_V5_L", "cross_V5_R"]])
+        df_cross_V5 = verbose_dataframe(df[["cross_V5_L", "cross_V5_R"]], self.subject_ids)
         self.bar_plot_with_points(df_cross_V5, chance_level)
         self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
-        df_cross_PT = verbose_dataframe(df[["cross_PT_L", "cross_PT_R"]])
+        df_cross_PT = verbose_dataframe(df[["cross_PT_L", "cross_PT_R"]], self.subject_ids)
         self.bar_plot_with_points(df_cross_PT, chance_level)
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
 
