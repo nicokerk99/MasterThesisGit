@@ -41,7 +41,7 @@ class Plotter():
             if not os.path.exists(plot_dir + "/" + di):
                 os.makedirs(plot_dir + "/" + di)
 
-        plt.rcParams.update({'font.size': 15})
+        plt.rcParams.update({'font.size': 12})
 
     def save(self, label, sub_dir, ylabel, xlabel="subject id", legend=True):
         """ function that adds the legend, title, label axes and saves a plot in self.plot_dir/sub_dir/label.jpg.
@@ -51,8 +51,11 @@ class Plotter():
         @param xlabel : label for the x axis
         @param legend : boolean to tell if need of a legend or not """
 
-        if legend :
-            plt.legend(loc="lower center")
+        if legend is not None:
+            if legend is True:
+                plt.legend(loc="lower center")
+            else :
+                plt.legend()
         plt.title(label, wrap=True)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -121,6 +124,7 @@ class Plotter():
             x="Region",
             y="Score",
             hue="Modality",
+            hue_order=["Vision", "Audition"],
             palette=self.name_to_color,
             alpha=.7,
         )
@@ -129,6 +133,7 @@ class Plotter():
             x="Region",
             y="Score",
             hue="Modality",
+            hue_order=["Vision", "Audition"],
             dodge=True,
             palette=self.name_to_color,
             alpha=0.4,
@@ -143,6 +148,7 @@ class Plotter():
             x="Region",
             y="Score",
             hue="Modality",
+            hue_order=["Vision", "Audition"],
             palette=self.name_to_color,
             alpha=.05,
         )
