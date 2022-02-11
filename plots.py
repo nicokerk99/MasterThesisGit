@@ -116,6 +116,10 @@ class Plotter():
         else :
             plt.figure(figsize=(23, 10))
 
+        hue_order = ["Vision", "Audition"]
+        if df["Modality"].nunique() <= 1 :
+            hue_order = ["Cross-modal"]
+
         # Draw the bar chart
         ax = sns.catplot(
             data=df,
@@ -124,7 +128,7 @@ class Plotter():
             x="Region",
             y="Score",
             hue="Modality",
-            hue_order=["Vision", "Audition"],
+            hue_order=hue_order,
             palette=self.name_to_color,
             alpha=.7,
         )
@@ -133,7 +137,7 @@ class Plotter():
             x="Region",
             y="Score",
             hue="Modality",
-            hue_order=["Vision", "Audition"],
+            hue_order=hue_order,
             dodge=True,
             palette=self.name_to_color,
             alpha=0.4,
@@ -148,7 +152,7 @@ class Plotter():
             x="Region",
             y="Score",
             hue="Modality",
-            hue_order=["Vision", "Audition"],
+            hue_order=hue_order,
             palette=self.name_to_color,
             alpha=.05,
         )
@@ -165,24 +169,24 @@ class Plotter():
 
         df_within_V5 = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]], self.subject_ids)
         self.bar_plot_with_points(df_within_V5, chance_level)
-        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
+        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
         df_within_PT = verbose_dataframe(df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]], self.subject_ids)
         self.bar_plot_with_points(df_within_PT, chance_level)
-        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
+        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
         df_within_all = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R",
                                               "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]], self.subject_ids)
         self.bar_plot_with_points(df_within_all, chance_level)
-        self.save("Decoding within modality", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
+        self.save("Decoding within modality", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
         df_cross_V5 = verbose_dataframe(df[["cross_V5_L", "cross_V5_R"]], self.subject_ids)
         self.bar_plot_with_points(df_cross_V5, chance_level)
-        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
+        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
         df_cross_PT = verbose_dataframe(df[["cross_PT_L", "cross_PT_R"]], self.subject_ids)
         self.bar_plot_with_points(df_cross_PT, chance_level)
-        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=False)
+        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
     def generate_title(self, begin, modality, pval):
         """ function that generates the title for bootstrap plots

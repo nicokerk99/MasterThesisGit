@@ -235,7 +235,7 @@ class Decoder:
 
         return perm_labels
 
-    def score_bootstrapped_permutations(self, n_single_perm, labels, tasks_regions, maps, n_subjects, within_modality):
+    def score_bootstrapped_permutations(self, n_single_perm, labels, tasks_regions, maps, n_subjects, within_modality, verbose=True):
         start_time = time.time()
         cfm_n_perm = [None]*n_subjects
         for i in range(n_subjects):
@@ -254,6 +254,8 @@ class Decoder:
 
             cfm_n_perm[i] = cfm_dicts
 
-        duration = time.time()-start_time
-        print("Running models done in "+str(duration)+" seconds")
+            if verbose :
+                duration = time.time()-start_time
+                print(str(i+1)+"/"+str(n_subjects)+" subjects in "+str(duration)+" seconds")
+
         return cfm_n_perm
