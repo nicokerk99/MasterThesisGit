@@ -148,13 +148,13 @@ class Plotter():
             ci="sd",
             capsize=0.1,
             errcolor="darkslategrey",
-            errwidth=2.5,
+            errwidth=1.5,
             x="Region",
-            y="Score",
+            y="Score_mean_dev",
             hue="Modality",
             hue_order=hue_order,
             palette=self.name_to_color,
-            alpha=.05,
+            alpha=.7,
         )
         g.legend_.remove()
 
