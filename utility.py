@@ -53,27 +53,33 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
     for modality in df_bootstrap:
         gv = df_group_results[modality][0]
         count = len([v for v in df_bootstrap[modality] if v > gv])
-        pvals[modality] = (count+1)/(len(df_bootstrap[modality])+1)
+        pvals[modality] = (count+1)/(len(df_bootstrap[modality])+1)*4
     return pvals
 
 
 def verbose_dataframe(df, subjects_ids):
-    column_names = ["Modality", "Region", "Score"]
+    column_names = ["Modality", "Region", "Score", "Score_mean_dev"]
     vb_df = pd.DataFrame(columns=column_names)
     for entry in df :
         keywords = entry.split('_')
+
+        if "vis" in keywords : mod = "Vision"
+        elif "aud" in keywords : mod = "Audition"
+        else: mod = "Cross-modal"
+        
+        region = "V5 " if "V5" in keywords else "PT "
+        region += "L" if "L" in keywords else "R"
+
+        n = len(df[entry]) - df[entry].isnull().sum()
+        avg = np.mean(df[entry])
+        
         for i in subjects_ids:
             if df[entry][i]:
                 new_entry = dict()
-                if "vis" in keywords :
-                    new_entry["Modality"] = "Vision"
-                elif "aud" in keywords :
-                    new_entry["Modality"] = "Audition"
-                else:
-                    new_entry["Modality"] = "Cross-modal"
-                new_entry["Region"] = "V5 " if "V5" in keywords else "PT "
-                new_entry["Region"] += "L" if "L" in keywords else "R"
+                new_entry["Modality"] = mod
+                new_entry["Region"] = region
                 new_entry["Score"] = df[entry][i]
+                new_entry["Score_mean_dev"] = df[entry][i]/n + avg - avg/n
                 vb_df = vb_df.append(new_entry, ignore_index=True)
 
     return vb_df
@@ -90,8 +96,8 @@ def cfm_string_to_matrix(cfm_string):
 def compute_group_confusion_matrix(df_cf_matrixes, subjects_ids):
     group_cf = dict()
     for modality in df_cf_matrixes:
-        number_of_nans = df_cf_matrixes[modality].isnull().sum()
-        gcf = np.zeros((4, 4, len(subjects_ids) - number_of_nans))
+        n_of_nans = df_cf_matrixes[modality].isnull().sum()
+        gcf = np.zeros((4, 4, len(subjects_ids) - n_of_nans))
         l = 0
         for i, subj_id in enumerate(subjects_ids):
             cfm = cfm_string_to_matrix(df_cf_matrixes[modality][subj_id])

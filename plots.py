@@ -121,7 +121,7 @@ class Plotter():
             hue_order = ["Cross-modal"]
 
         # Draw the bar chart
-        ax = sns.catplot(
+        sns.catplot(
             data=df,
             kind="bar",
             ci=None,
@@ -143,18 +143,18 @@ class Plotter():
             alpha=0.4,
             size=7
         )
-        ax = sns.barplot(
+        sns.barplot(
             data=df,
             ci="sd",
             capsize=0.1,
             errcolor="darkslategrey",
-            errwidth=2.5,
+            errwidth=1.5,
             x="Region",
-            y="Score",
+            y="Score_mean_dev",
             hue="Modality",
             hue_order=hue_order,
             palette=self.name_to_color,
-            alpha=.05,
+            alpha=.7,
         )
         g.legend_.remove()
 
@@ -199,7 +199,7 @@ class Plotter():
             beginning = begin + " for " + self.translation[modality[:3]][1] + " motion in "
         title = beginning + self.translation[modality[-1:]] + " " + modality[-4:-2]
         
-        if pval > 0 : return title + " (estimated p-value = " + str(round(pval, 6)) + ")"
+        if pval > 0 : return title + " (estimated p-value < " + min(str(round(pval, 6)), 1) + ")"
         else : return title
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
@@ -258,7 +258,7 @@ class Plotter():
             for stat, values in zip(["mean", "variance"], [mean_cfm, var_cfm]):
                 df = pd.DataFrame(values, index = classes, columns = classes)
                 pylab.figure(figsize=(8,8))
-                _ = sns.heatmap(df, linewidth = 1, annot = True, cmap = cm.YlOrRd)
+                sns.heatmap(df, linewidth = 1, annot = True, cmap = cm.YlOrRd)
                 title = self.generate_title("Confusion Matrix "+stat, modality, -1)
                 self.save(title, self.conf_matrixes_dir, "true label", "predicted label", None)
 
