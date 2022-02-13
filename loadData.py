@@ -41,10 +41,10 @@ def get_masks(id_subjects, folder_name, plot=False):
             ide = "0" + ide
 
         for name in masks_names:
-            my_file = Path(folder_name + "/" + name + "_sub" + ide + ".nii")
+            my_file = Path(folder_name + "/" + name + "_sub_" + ide + ".nii")
             if my_file.is_file():
                 # file exists
-                masks[i][name] = load_img(folder_name + "/" + name + "_sub" + ide + ".nii")
+                masks[i][name] = load_img(folder_name + "/" + name + "_sub_" + ide + ".nii")
                 masks_exist[i][name] = True
                 if plot:
                     plot_glass_brain(masks[i][name], title=name + " - subject " + ide)
