@@ -41,8 +41,8 @@ class Decoder:
         self.masks_exist = masks_exist
 
     def cross_validate(self, brain_map, labels, return_model=False, brain_map_2=None):
-        """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
-        'R','R','L','L']
+        """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
+        'U','D','R','L']
         :param brain_map: list of maps (size n_samples), which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param return_model: boolean to say if we have to return the fitted model
@@ -71,8 +71,8 @@ class Decoder:
             return conf_matrix
 
     def p_value_random_permutations(self, brain_map, labels, base_score):
-        """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
-        'R','R','L','L']
+        """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
+        'U','D','R','L']
         :param brain_map: list of maps (size n_samples), which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param base_score: score obtained with true labels
@@ -94,8 +94,8 @@ class Decoder:
         return ((count + 1) / (self.n_perm + 1)), conf_perms
 
     def classify(self, brain_maps, labels, do_pval=True):
-        """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
-        'R','R','L','L']
+        """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
+        'U','D','R','L']
         :param brain_maps: list (for 1 subject) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param do_pval: boolean to tell if it is needed to estimate a p-value

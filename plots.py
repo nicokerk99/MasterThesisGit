@@ -199,7 +199,7 @@ class Plotter():
             beginning = begin + " for " + self.translation[modality[:3]][1] + " motion in "
         title = beginning + self.translation[modality[-1:]] + " " + modality[-4:-2]
         
-        if pval > 0 : return title + " (estimated p-value < " + str(min(round(pval, 6),1)) + ")"
+        if pval > 0 : return title + " (estimated p-value = " + str(min(round(pval, 6),1)) + ")"
         else : return title
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
