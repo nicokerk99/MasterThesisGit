@@ -148,13 +148,13 @@ class Plotter():
             ci="sd",
             capsize=0.1,
             errcolor="darkslategrey",
-            errwidth=1.5,
+            errwidth=1.0,
             x="Region",
             y="Score_mean_dev",
             hue="Modality",
             hue_order=hue_order,
             palette=self.name_to_color,
-            alpha=.7,
+            alpha=1,
         )
         g.legend_.remove()
 
@@ -199,7 +199,7 @@ class Plotter():
             beginning = begin + " for " + self.translation[modality[:3]][1] + " motion in "
         title = beginning + self.translation[modality[-1:]] + " " + modality[-4:-2]
         
-        if pval > 0 : return title + " (estimated p-value < " + min(str(round(pval, 6)), 1) + ")"
+        if pval > 0 : return title + " (estimated p-value < " + str(min(round(pval, 6),1)) + ")"
         else : return title
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
@@ -247,11 +247,11 @@ class Plotter():
 
     def plot_group_confusion_matrix(self, group_cfm, classes):
         for modality in group_cfm:
-            mean_cfm = np.zeros((4,4))
-            var_cfm = np.zeros((4,4))
+            mean_cfm = np.zeros((len(classes), len(classes)))
+            var_cfm = np.zeros((len(classes), len(classes)))
             cfm = group_cfm[modality]
-            for i in range(4):
-                for j in range(4):
+            for i in range(len(classes)):
+                for j in range(len(classes)):
                     mean_cfm[i][j] = mean(cfm[i][j])
                     var_cfm[i][j] = np.var(cfm[i][j])
 

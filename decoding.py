@@ -49,11 +49,10 @@ class Decoder:
         :param brain_map_2: other brain map for cross modal decoding
         :return: the sum of confusion matrixes obtained in each fold """
 
-        conf_matrix = np.zeros((4,4))
+        conf_matrix = np.zeros((self.n_classes, self.n_classes))
         for ind in range(self.n_splits):
-            test_index = range(ind, len(brain_map), self.n_splits)
-            train_index = range(0, len(brain_map))
-            train_index = [ind for ind in train_index if ind not in test_index]
+            test_index = range(ind*self.n_classes, (ind+1)*self.n_classes)
+            train_index = [i for i in range(len(brain_map)) if i not in test_index]
 
             if brain_map_2 is None : # within modality decoding
                 X_train, X_test = brain_map[train_index], brain_map[test_index]
@@ -88,7 +87,7 @@ class Decoder:
             labels_perm = permute_labels(labels, gap)
             conf_matrix = self.cross_validate(brain_map, labels_perm)
             conf_perms[j] = conf_matrix
-            score_perm = accuracy(conf_matrix)
+            score_perm = accuracy(conf_matrix, self.n_classes)
             if score_perm > base_score:
                 count += 1
 
@@ -103,7 +102,7 @@ class Decoder:
         :return: cross-validation confusion matrix, p-value """
 
         conf_matrix = self.cross_validate(brain_maps[0], labels)
-        base_score = accuracy(conf_matrix)
+        base_score = accuracy(conf_matrix, self.n_classes)
         p_val, conf_matrix_perm = None, None
         if do_pval:
             p_val, conf_matrix_perm = self.p_value_random_permutations(brain_maps[0], labels, base_score)
