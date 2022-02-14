@@ -6,15 +6,15 @@ from sklearn.metrics import confusion_matrix
 from metrics import accuracy
 
 
-def permute_labels(labels, gap):
+def permute_labels(labels, gap, n_classes):
     labels_copy = labels.copy()
 
     # shuffling but keeping a structure
     for i in range(gap):
-        indexes = range(i, len(labels), gap)
+        indexes = range(i*n_classes, (i+1)*n_classes)
         subset_copy = [labels_copy[idx] for idx in indexes]
         random.shuffle(subset_copy)
-        labels_copy[i:len(labels):gap] = subset_copy
+        labels_copy[i*n_classes:(i+1)*n_classes] = subset_copy
 
     return labels_copy
 
@@ -84,7 +84,7 @@ class Decoder:
         gap = int(len(labels) / self.n_classes)
         conf_perms = [0]*range(self.n_perm)
         for j in range(self.n_perm):
-            labels_perm = permute_labels(labels, gap)
+            labels_perm = permute_labels(labels, gap, self.n_classes)
             conf_matrix = self.cross_validate(brain_map, labels_perm)
             conf_perms[j] = conf_matrix
             score_perm = accuracy(conf_matrix, self.n_classes)
@@ -230,7 +230,7 @@ class Decoder:
         gap = int(len(labels) / self.n_classes)
         perm_labels = [None] * n_perm
         for i in range(n_perm):
-            perm_labels[i] = permute_labels(labels, gap)
+            perm_labels[i] = permute_labels(labels, gap, self.n_classes)
 
         return perm_labels
 
