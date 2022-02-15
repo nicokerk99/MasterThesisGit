@@ -6,15 +6,15 @@ from sklearn.metrics import confusion_matrix
 from metrics import accuracy
 
 
-def permute_labels(labels, gap):
+def permute_labels(labels, gap, n_classes):
     labels_copy = labels.copy()
 
     # shuffling but keeping a structure
     for i in range(gap):
-        indexes = range(i, len(labels), gap)
+        indexes = range(i*n_classes, (i+1)*n_classes)
         subset_copy = [labels_copy[idx] for idx in indexes]
         random.shuffle(subset_copy)
-        labels_copy[i:len(labels):gap] = subset_copy
+        labels_copy[i*n_classes:(i+1)*n_classes] = subset_copy
 
     return labels_copy
 
@@ -41,19 +41,18 @@ class Decoder:
         self.masks_exist = masks_exist
 
     def cross_validate(self, brain_map, labels, return_model=False, brain_map_2=None):
-        """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
-        'R','R','L','L']
+        """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
+        'U','D','R','L']
         :param brain_map: list of maps (size n_samples), which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param return_model: boolean to say if we have to return the fitted model
         :param brain_map_2: other brain map for cross modal decoding
         :return: the sum of confusion matrixes obtained in each fold """
 
-        conf_matrix = np.zeros((4,4))
+        conf_matrix = np.zeros((self.n_classes, self.n_classes))
         for ind in range(self.n_splits):
-            test_index = range(ind, len(brain_map), self.n_splits)
-            train_index = range(0, len(brain_map))
-            train_index = [ind for ind in train_index if ind not in test_index]
+            test_index = range(ind*self.n_classes, (ind+1)*self.n_classes)
+            train_index = [i for i in range(len(brain_map)) if i not in test_index]
 
             if brain_map_2 is None : # within modality decoding
                 X_train, X_test = brain_map[train_index], brain_map[test_index]
@@ -72,8 +71,8 @@ class Decoder:
             return conf_matrix
 
     def p_value_random_permutations(self, brain_map, labels, base_score):
-        """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
-        'R','R','L','L']
+        """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
+        'U','D','R','L']
         :param brain_map: list of maps (size n_samples), which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param base_score: score obtained with true labels
@@ -85,25 +84,25 @@ class Decoder:
         gap = int(len(labels) / self.n_classes)
         conf_perms = [0]*range(self.n_perm)
         for j in range(self.n_perm):
-            labels_perm = permute_labels(labels, gap)
+            labels_perm = permute_labels(labels, gap, self.n_classes)
             conf_matrix = self.cross_validate(brain_map, labels_perm)
             conf_perms[j] = conf_matrix
-            score_perm = accuracy(conf_matrix)
+            score_perm = accuracy(conf_matrix, self.n_classes)
             if score_perm > base_score:
                 count += 1
 
         return ((count + 1) / (self.n_perm + 1)), conf_perms
 
     def classify(self, brain_maps, labels, do_pval=True):
-        """ Attention, this function is based on labels with consecutive, balanced categories, like['U','U','D','D',
-        'R','R','L','L']
+        """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
+        'U','D','R','L']
         :param brain_maps: list (for 1 subject) of lists (size n_samples) of maps, which are features
         :param labels: list of strings (size n_samples), which are the labels
         :param do_pval: boolean to tell if it is needed to estimate a p-value
         :return: cross-validation confusion matrix, p-value """
 
         conf_matrix = self.cross_validate(brain_maps[0], labels)
-        base_score = accuracy(conf_matrix)
+        base_score = accuracy(conf_matrix, self.n_classes)
         p_val, conf_matrix_perm = None, None
         if do_pval:
             p_val, conf_matrix_perm = self.p_value_random_permutations(brain_maps[0], labels, base_score)
@@ -231,7 +230,7 @@ class Decoder:
         gap = int(len(labels) / self.n_classes)
         perm_labels = [None] * n_perm
         for i in range(n_perm):
-            perm_labels[i] = permute_labels(labels, gap)
+            perm_labels[i] = permute_labels(labels, gap, self.n_classes)
 
         return perm_labels
 

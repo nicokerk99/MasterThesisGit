@@ -2,6 +2,7 @@ from nilearn.image import load_img
 from nilearn.plotting import plot_glass_brain
 from masks import *
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 
@@ -54,8 +55,9 @@ def get_masks(id_subjects, folder_name, plot=False):
     return masks, masks_exist
 
 
-def load_full_data(subjects_ids, length_one_modality, maps_folder="brain_maps", masks_folder="masks",
+def load_full_data(subjects_ids, n_classes, nb_runs, maps_folder="brain_maps", masks_folder="masks",
                    is_from_mohamed=False):
+    length_one_modality = n_classes*nb_runs
     maps_masked = [dict() for _ in subjects_ids]
     masks_exist = [dict() for _ in subjects_ids]
     for i, subj_id in enumerate(subjects_ids):
@@ -71,6 +73,7 @@ def load_full_data(subjects_ids, length_one_modality, maps_folder="brain_maps", 
         del beta_maps
         del masks  # to relieve memory
 
+    maps_masked = change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs)
     return maps_masked, masks_exist
 
 
@@ -104,6 +107,21 @@ def retrieve_bootstrap_metric(out_directory, metric):
     for col in bootstrap_cross_df.columns: bootstrap_within_df[col] = bootstrap_cross_df[col]
 
     return bootstrap_within_df
+
+
+def change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs):
+    for i, subj_id in enumerate(subjects_ids):
+        for stimuli in ["vis", "aud"]:
+            dic = maps_masked[i][stimuli][0]
+            dimension = dic[list(dic.keys())[0]].shape
+            for k in dic:
+                reorg = np.zeros(dimension)
+                data = dic[k]
+                for r in range(nb_runs):
+                    for c in range(n_classes):
+                        reorg[r*n_classes+c] = data[nb_runs*c+r]
+                maps_masked[i][stimuli][0][k] = reorg
+    return maps_masked
 
 
 """
