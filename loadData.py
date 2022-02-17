@@ -113,8 +113,8 @@ def change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs):
     for i, subj_id in enumerate(subjects_ids):
         for stimuli in ["vis", "aud"]:
             dic = maps_masked[i][stimuli][0]
-            dimension = dic[list(dic.keys())[0]].shape
             for k in dic:
+                dimension = dic[k].shape
                 reorg = np.zeros(dimension)
                 data = dic[k]
                 for r in range(nb_runs):
