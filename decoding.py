@@ -29,8 +29,8 @@ class Decoder:
     @n_perm : number of permutations to make when inspecting significance
     @masks_exist : list of dictionaries which tells for each subject which masks are present or not"""
 
-    def __init__(self, model, n_classes, n_splits, seed, n_perm):
-        self.model = model
+    def __init__(self, models, n_classes, n_splits, seed, n_perm):
+        self.models = models
         self.n_classes = n_classes
         self.n_splits = n_splits
         self.seed = seed
@@ -49,7 +49,7 @@ class Decoder:
         :param brain_map_2: other brain map for cross modal decoding
         :return: the sum of confusion matrixes obtained in each fold """
 
-        conf_matrix = np.zeros((self.n_classes, self.n_classes))
+        conf_matrix = {name : np.zeros((self.n_classes, self.n_classes)) for name in self.models}
         for ind in range(self.n_splits):
             test_index = range(ind*self.n_classes, (ind+1)*self.n_classes)
             train_index = [i for i in range(len(brain_map)) if i not in test_index]
@@ -60,13 +60,16 @@ class Decoder:
                 X_train, X_test = brain_map[train_index], brain_map_2[test_index]
             y_train, y_test = labels[train_index], labels[test_index]
 
-            self.model.fit(X_train, y_train)
-            predictions = self.model.predict(X_test)
-            conf_matrix += confusion_matrix(y_test, predictions)
+            for name in self.models:
+                model = self.models[name]
+                model.fit(X_train, y_train)
+                predictions = model.predict(X_test)
+                conf_matrix[name] += confusion_matrix(y_test, predictions)
 
         if return_model:
-            self.model.fit(brain_map, labels)  # re-fitting the model on all data
-            return conf_matrix, self.model
+            for name in self.models:
+                self.models[name].fit(brain_map, labels)  # re-fitting the model on all data
+            return conf_matrix, self.models
         else:
             return conf_matrix
 
@@ -80,18 +83,19 @@ class Decoder:
          and permutations confusion matrixes """
 
         random.seed(self.seed)
-        count = 0
+        count = {name:0 for name in self.models}
         gap = int(len(labels) / self.n_classes)
         conf_perms = [0]*range(self.n_perm)
         for j in range(self.n_perm):
             labels_perm = permute_labels(labels, gap, self.n_classes)
             conf_matrix = self.cross_validate(brain_map, labels_perm)
             conf_perms[j] = conf_matrix
-            score_perm = accuracy(conf_matrix, self.n_classes)
-            if score_perm > base_score:
-                count += 1
+            for name in self.models:
+                score_perm = accuracy(conf_matrix[name], self.n_classes)
+                if score_perm > base_score[name]:
+                    count[name] += 1
 
-        return ((count + 1) / (self.n_perm + 1)), conf_perms
+        return [(count[name] + 1) / (self.n_perm + 1) for name in self.models], conf_perms
 
     def classify(self, brain_maps, labels, do_pval=True):
         """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
@@ -102,7 +106,7 @@ class Decoder:
         :return: cross-validation confusion matrix, p-value """
 
         conf_matrix = self.cross_validate(brain_maps[0], labels)
-        base_score = accuracy(conf_matrix, self.n_classes)
+        base_score = [accuracy(conf_matrix[name], self.n_classes) for name in self.models]
         p_val, conf_matrix_perm = None, None
         if do_pval:
             p_val, conf_matrix_perm = self.p_value_random_permutations(brain_maps[0], labels, base_score)
@@ -137,7 +141,7 @@ class Decoder:
             for tasks, regions in tasks_regions:
                 _, cf, _ = self.classify_tasks_regions(maps[i], labels, tasks, regions, i, do_pval=False)
                 conf_matrixes[i].update(cf)
-            # print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(n_subjects))
+            print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(len(subjects_ids)))
 
         return conf_matrixes
 
@@ -170,8 +174,9 @@ class Decoder:
 
         cfm_0 = sub(tasks_names)
         cfm_1 = sub(tasks_names[::-1])
-        for key in cfm_0:
-            cfm_0[key] += cfm_1[key]
+        for name in self.models:
+            for key in cfm_0:
+                cfm_0[key][name] += cfm_1[key][name]
 
         return cfm_0
 
@@ -185,7 +190,7 @@ class Decoder:
                 for the different brain regions """
 
         def sub(task_order):
-            conf_matrix = dict()
+            conf_matrix = {name:dict() for name in self.models}
             key = "cross_"
             for region_name in regions_names:
                 if self.masks_exist[id_subj][region_name] :
@@ -197,15 +202,17 @@ class Decoder:
                         map_0 = (scaler.fit_transform(_maps_0[i].T)).T
                         map_1 = (scaler.fit_transform(_maps_1[i].T)).T
 
-                        self.model.fit(map_0, labels[task_order[0]])
-                        predictions = self.model.predict(map_1)
-                        conf_matrix[key + region_name] = confusion_matrix(labels[task_order[1]], predictions)
+                        for name in self.models:
+                            self.model[name].fit(map_0, labels[task_order[0]])
+                            predictions = self.model[name].predict(map_1)
+                            conf_matrix[name][key + region_name] = confusion_matrix(labels[task_order[1]], predictions)
             return conf_matrix
             
         cfm_0 = sub(tasks_names)
         cfm_1 = sub(tasks_names[::-1])
-        for key in cfm_0:
-            cfm_0[key] += cfm_1[key]
+        for name in self.models:
+            for key in cfm_0:
+                cfm_0[name][key] += cfm_1[name][key]
         
         return cfm_0
 

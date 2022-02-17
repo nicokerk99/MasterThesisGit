@@ -124,6 +124,15 @@ def change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs):
     return maps_masked
 
 
+def change_confusion_matrixes_org(cfm, subjects_ids, model_names):
+    new_cfm = {name:[dict() for _ in subjects_ids] for name in model_names}
+    for i, subj_id in enumerate(subjects_ids):
+        for modality in cfm[i]:
+            for name in model_names:
+                new_cfm[name][i][modality] = cfm[i][modality][name]
+    return new_cfm
+
+    
 """
 def retrieve_bootstrap_matrixes(out_directory):
     bootstrap_within_df = pd.read_csv(out_directory + "bootstraps_within.csv", index_col=0)
