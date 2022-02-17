@@ -42,10 +42,10 @@ def get_masks(id_subjects, folder_name, plot=False):
             ide = "0" + ide
 
         for name in masks_names:
-            my_file = Path(folder_name + "/" + name + "_sub" + ide + ".nii")
+            my_file = Path(folder_name + "/" + name + "_sub_" + ide + ".nii")
             if my_file.is_file():
                 # file exists
-                masks[i][name] = load_img(folder_name + "/" + name + "_sub" + ide + ".nii")
+                masks[i][name] = load_img(folder_name + "/" + name + "_sub_" + ide + ".nii")
                 masks_exist[i][name] = True
                 if plot:
                     plot_glass_brain(masks[i][name], title=name + " - subject " + ide)
@@ -113,8 +113,8 @@ def change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs):
     for i, subj_id in enumerate(subjects_ids):
         for stimuli in ["vis", "aud"]:
             dic = maps_masked[i][stimuli][0]
-            dimension = dic[list(dic.keys())[0]].shape
             for k in dic:
+                dimension = dic[k].shape
                 reorg = np.zeros(dimension)
                 data = dic[k]
                 for r in range(nb_runs):
