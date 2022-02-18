@@ -160,11 +160,14 @@ class Plotter():
 
         i = 0
         for bar in bplot.patches[:len(pvals)]:
-            bplot.annotate(stars(pvals[i]),
-                   (bar.get_x() + bar.get_width() / 2, bar.get_height()), 
-                   ha='center', va='center',
-                   size=15, xytext=(0, 8),
-                   textcoords='offset points')
+            star = stars(pvals[i])
+            if star != "ns":
+                bplot.annotate(star,
+                    (bar.get_x() + bar.get_width() / 2, 0), 
+                    ha="center", va="center",
+                    size=12, xytext=(0, 8),
+                    textcoords="offset points",
+                    color = "white")
             i += 1
 
         g.legend_.remove()
