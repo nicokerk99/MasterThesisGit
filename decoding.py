@@ -141,7 +141,7 @@ class Decoder:
             for tasks, regions in tasks_regions:
                 _, cf, _ = self.classify_tasks_regions(maps[i], labels, tasks, regions, i, do_pval=False)
                 conf_matrixes[i].update(cf)
-            print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(len(subjects_ids)))
+            # print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(len(subjects_ids)))
 
         return conf_matrixes
 
