@@ -132,6 +132,16 @@ def change_confusion_matrixes_org(cfm, subjects_ids, model_names):
                 new_cfm[name][i][modality] = cfm[i][modality][name]
     return new_cfm
 
+
+def change_cfm_bootstrap_org(cfm, subjects_ids, model_names, n_single_perm):
+    new_cfm = {name:[[dict() for _ in range(n_single_perm)] for _ in subjects_ids] for name in model_names}
+    for i, subj_id in enumerate(subjects_ids):
+        for j in range(n_single_perm):
+            for modality in cfm[i][j]:
+                for name in model_names:
+                    new_cfm[name][i][j][modality] = cfm[i][j][modality][name]
+    return new_cfm
+
     
 """
 def retrieve_bootstrap_matrixes(out_directory):
