@@ -1,3 +1,4 @@
+from cProfile import label
 from statistics import mean
 from matplotlib import pyplot as plt
 from matplotlib import cm
@@ -110,7 +111,7 @@ class Plotter():
         self.bar_plot_cross_modal(data, chance_level)
         self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
-    def bar_plot_with_points(self, df, chance_level):
+    def bar_plot_with_points(self, df, chance_level, pvals):
         if df["Region"].nunique() <= 2 :
             plt.figure(figsize=(10, 10))
         else :
@@ -143,7 +144,7 @@ class Plotter():
             alpha=0.4,
             size=7
         )
-        sns.barplot(
+        bplot = sns.barplot(
             data=df,
             ci="sd",
             capsize=0.1,
@@ -156,37 +157,44 @@ class Plotter():
             palette=self.name_to_color,
             alpha=1,
         )
+
+        i = 0
+        for bar in bplot.patches[:len(pvals)]:
+            bplot.annotate(stars(pvals[i]),
+                   (bar.get_x() + bar.get_width() / 2, bar.get_height()), 
+                   ha='center', va='center',
+                   size=15, xytext=(0, 8),
+                   textcoords='offset points')
+            i += 1
+
         g.legend_.remove()
 
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
 
-    def plot_cv_score_with_points(self, df, chance_level=False):
+    def plot_cv_score_with_points(self, df, pvals, chance_level=False):
         """ function to plot the results of the cross validation, with individual points.
         @param df : the dataframe containing the cross val results
         @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
         ylabel = "CV score"
 
-        df_within_V5 = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R"]], self.subject_ids)
-        self.bar_plot_with_points(df_within_V5, chance_level)
-        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
+        for region in ["PT", "V5"]:
+            labels = ["aud_"+region+"_L", "aud_"+region+"_R", "vis_"+region+"_L", "vis_"+region+"_R"]
+            labels_pvals = ["vis_"+region+"_L", "vis_"+region+"_R", "aud_"+region+"_L", "aud_"+region+"_R"]
+            df_within = verbose_dataframe(df[labels], self.subject_ids)
+            self.bar_plot_with_points(df_within, chance_level, [pvals[l] for l in labels_pvals])
+            self.save("Decoding within modality in "+region, self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
-        df_within_PT = verbose_dataframe(df[["aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]], self.subject_ids)
-        self.bar_plot_with_points(df_within_PT, chance_level)
-        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
+            labels = ["cross_"+region+"_L", "cross_"+region+"_R"]
+            df_cross = verbose_dataframe(df[labels], self.subject_ids)
+            self.bar_plot_with_points(df_cross, chance_level, [pvals[l] for l in labels])
+            self.save("Decoding across modalities in "+region, self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
-        df_within_all = verbose_dataframe(df[["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R",
-                                              "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]], self.subject_ids)
-        self.bar_plot_with_points(df_within_all, chance_level)
+        labels = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
+        labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
+        df_within_all = verbose_dataframe(df[labels], self.subject_ids)
+        self.bar_plot_with_points(df_within_all, chance_level, [pvals[k] for k in labels_pvals])
         self.save("Decoding within modality", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
-
-        df_cross_V5 = verbose_dataframe(df[["cross_V5_L", "cross_V5_R"]], self.subject_ids)
-        self.bar_plot_with_points(df_cross_V5, chance_level)
-        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
-
-        df_cross_PT = verbose_dataframe(df[["cross_PT_L", "cross_PT_R"]], self.subject_ids)
-        self.bar_plot_with_points(df_cross_PT, chance_level)
-        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
 
     def generate_title(self, begin, modality, pval):
         """ function that generates the title for bootstrap plots
@@ -309,3 +317,11 @@ def str_to_array(str_array, length):
             vals[i] = float(v)
             i += 1
     return vals
+
+
+def stars(pval):
+    if pval > 0.05 : return "ns"
+    if pval <= 0.0001 : return "****"
+    if pval <= 0.001 : return "***"
+    if pval <= 0.01 : return "**"
+    else: return "*"
