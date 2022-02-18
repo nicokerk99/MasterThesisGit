@@ -55,7 +55,7 @@ class Plotter():
             if legend is True:
                 plt.legend(loc="lower center")
             else :
-                plt.legend()
+                plt.legend(loc=legend)
         plt.title(label, wrap=True)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -190,7 +190,7 @@ class Plotter():
 
     def generate_title(self, begin, modality, pval):
         """ function that generates the title for bootstrap plots
-        @param modality :  the modality (e.g. "aud_vis_V5_R")
+        @param modality :  the modality (e.g. "aud_V5_R")
         @param pval : the estimated p-value """
 
         if modality[:3] == "cro":
