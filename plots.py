@@ -91,21 +91,21 @@ class Plotter():
             hue_order=hue_order,
             dodge=True,
             palette=self.name_to_color,
-            alpha=0.4,
+            alpha=0.6,
             size=7
         )
         bplot = sns.barplot(
             data=df,
             ci="sd",
             capsize=0.1,
-            errcolor="darkslategrey",
+            errcolor="black",
             errwidth=1.0,
             x="Region",
             y="Score_mean_dev",
             hue="Modality",
             hue_order=hue_order,
             palette=self.name_to_color,
-            alpha=1,
+            alpha=0.3,
         )
 
         i = 0

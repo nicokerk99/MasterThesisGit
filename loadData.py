@@ -109,9 +109,14 @@ def retrieve_bootstrap_metric(out_directory, metric):
     return bootstrap_within_df
 
 
-def retrieve_pvals(out_directory):
-    df = pd.read_csv(out_directory + "estimated_pval_bootstrap.csv", index_col=0)
-    return df.to_dict('records')[0]
+def retrieve_pvals(out_directory, default_keys=None):
+    my_file = Path(out_directory + "estimated_pval_bootstrap.csv")
+    if my_file.is_file():
+        df = pd.read_csv(out_directory + "estimated_pval_bootstrap.csv", index_col=0)
+        return df.to_dict('records')[0]
+    else :
+        print("No p-values found in directory : "+out_directory)
+        return dict((key, 1) for key in default_keys)
 
 
 def change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs):
