@@ -109,6 +109,11 @@ def retrieve_bootstrap_metric(out_directory, metric):
     return bootstrap_within_df
 
 
+def retrieve_pvals(out_directory):
+    df = pd.read_csv(out_directory + "estimated_pval_bootstrap.csv", index_col=0)
+    return df.to_dict('records')[0]
+
+
 def change_maps_masked_org(maps_masked, subjects_ids, n_classes, nb_runs):
     for i, subj_id in enumerate(subjects_ids):
         for stimuli in ["vis", "aud"]:

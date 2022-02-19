@@ -1,5 +1,3 @@
-from cProfile import label
-from statistics import mean
 from matplotlib import pyplot as plt
 from matplotlib import cm
 from matplotlib import pylab
@@ -62,54 +60,6 @@ class Plotter():
         plt.ylabel(ylabel)
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight')
         plt.close()
-
-    def bar_plot_within_modal(self, dict_data, chance_level):
-        """ plots a dictionnary as a bar plot with index ["Right", "Left"]
-        @param dict_data : the dictionnary containing the data to be plotted
-        @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
-
-        plot_df = pd.DataFrame(dict_data, index=["Left", "Right"])
-        plot_df.plot(kind='bar', colormap=self.color)
-        if chance_level:
-            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
-        plt.xticks(rotation=0)
-
-    def bar_plot_cross_modal(self, data_list, chance_level):
-        """ plots a dictionnary as a bar plot with index ["Right", "Left"]
-        @param data_list : list containing the data to be plotted
-        @param chance_level : set to True if you want a line y = 0.25 to be added to the plot """
-
-        plt.bar(["Left", "Right"], data_list, color=self.modality_to_color["cro"], width=0.3)
-        if chance_level:
-            plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
-        plt.xticks(rotation=0)
-
-    def plot_cv_score(self, df, chance_level=False):
-        """ function to plot the results of the cross validation.
-        @param df : the dataframe containing the cross val results
-        @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
-
-        ylabel = "CV score"
-
-        dict_data = {"audition": [df["aud_V5_L"][0], df["aud_V5_R"][0]],
-                     "vision": [df["vis_V5_L"][0], df["vis_V5_R"][0]]}
-        self.bar_plot_within_modal(dict_data, chance_level)
-        self.save("Decoding within modality in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
-
-        dict_data = {"audition": [df["aud_PT_L"][0], df["aud_PT_R"][0]],
-                     "vision": [df["vis_PT_L"][0], df["vis_PT_R"][0]]}
-        self.bar_plot_within_modal(dict_data, chance_level)
-        self.save("Decoding within modality in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
-
-        data = [float(df["cross_V5_L"]),
-                float(df["cross_V5_R"])]
-        self.bar_plot_cross_modal(data, chance_level)
-        self.save("Decoding across modalities in V5", self.cv_scores_dir, ylabel, xlabel="hemisphere")
-
-        data = [float(df["cross_PT_L"]),
-                float(df["cross_PT_R"])]
-        self.bar_plot_cross_modal(data, chance_level)
-        self.save("Decoding across modalities in PT", self.cv_scores_dir, ylabel, xlabel="hemisphere")
 
     def bar_plot_with_points(self, df, chance_level, pvals):
         if df["Region"].nunique() <= 2 :
@@ -228,34 +178,6 @@ class Plotter():
             title = self.generate_title("Bootstrap", modality, pvals[modality])
             self.save(title, self.bootstrap_dir, "density", xlabel="score")
 
-    def plot_perms_scores(self, df, n_perms, chance_level=False):
-        """ function to plot the results of the permutations. these are plotted along the subjects axis.
-        as we often have a ton of permutations, we plot the mean of the permutations scores for each modality 
-        @param df : the dataframe containing the permutations scores
-        @param n_perms : the number of permutations
-        @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
-
-        ylabel = "perm score"
-
-        audRV5 = [str_to_array(df.iloc[i]["aud_V5_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        audLV5 = [str_to_array(df.iloc[i]["aud_V5_L"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        visRV5 = [str_to_array(df.iloc[i]["vis_V5_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        visLV5 = [str_to_array(df.iloc[i]["vis_V5_L"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        audRPT = [str_to_array(df.iloc[i]["aud_PT_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        audLPT = [str_to_array(df.iloc[i]["aud_PT_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        visRPT = [str_to_array(df.iloc[i]["vis_PT_R"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-        visLPT = [str_to_array(df.iloc[i]["vis_PT_L"][1:-1], n_perms) for i in range(len(self.subject_ids))]
-
-        dict_data = {"audition": map(np.mean, [audLV5, audRV5]),
-                     "vision": map(np.mean, [visLV5, visRV5])}
-        self.bar_plot_within_modal(dict_data, chance_level)
-        self.save("Decoding in V5", self.perms_scores_dir, ylabel)
-
-        dict_data = {"audition": map(np.mean, [audLPT, audRPT]),
-                     "vision": map(np.mean, [visLPT, visRPT])}
-        self.bar_plot_within_modal(dict_data, chance_level)
-        self.save("Decoding in PT", self.perms_scores_dir, ylabel)
-
     def plot_group_confusion_matrix(self, group_cfm, classes):
         for modality in group_cfm:
             mean_cfm = np.zeros((len(classes), len(classes)))
@@ -263,7 +185,7 @@ class Plotter():
             cfm = group_cfm[modality]
             for i in range(len(classes)):
                 for j in range(len(classes)):
-                    mean_cfm[i][j] = mean(cfm[i][j])
+                    mean_cfm[i][j] = np.mean(cfm[i][j])
                     var_cfm[i][j] = np.var(cfm[i][j])
 
             for stat, values in zip(["mean", "variance"], [mean_cfm, var_cfm]):
