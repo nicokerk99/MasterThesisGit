@@ -70,7 +70,7 @@ def verbose_dataframe(df, subjects_ids):
         region = "V5 " if "V5" in keywords else "PT "
         region += "L" if "L" in keywords else "R"
 
-        n = len(df[entry]) - df[entry].isnull().sum()
+        n = np.sqrt(len(df[entry]) - df[entry].isnull().sum())
         avg = np.mean(df[entry])
         
         for i in subjects_ids:
