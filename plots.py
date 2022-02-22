@@ -263,7 +263,7 @@ class Plotter:
             plt.ylim(0.2, 0.5)
             if chance_level:
                 plt.axhline(0.25, color="black", alpha=0.5)
-            title = self.generate_title("Validation", modality, pval=-1)
+            title = self.generate_title("Validation score", modality, pval=-1)
             x_lab = "log10("+x_label+")" if log10_scale else x_label
             self.save(title, "validation_scores", "validation score", x_lab, legend="best")
 
