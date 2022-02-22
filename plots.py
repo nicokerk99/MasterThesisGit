@@ -7,9 +7,10 @@ import numpy as np
 import seaborn as sns
 import os
 from utility import *
+import math
 
 
-class Plotter():
+class Plotter:
     """ This class enables us to save plots of the results obtained in our 
     machine learning process. Its main utility is to ease the handling of folder path
     and avoid code repetition.
@@ -22,12 +23,13 @@ class Plotter():
     @bootstrap_dir : directory in which to save plots regarding bootstrap
     @color : color for the different plots (must be one of matplotlib.cm's colormaps) """
 
-    def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", conf_matrixes_dir = "conf_matrixes", bootstrap_dir="bootstrap"):
+    def __init__(self, plot_dir, subject_ids, cv_scores_dir="cv_scores", conf_matrixes_dir="conf_matrixes",
+                 bootstrap_dir="bootstrap"):
         self.plot_dir = plot_dir
         self.subject_ids = subject_ids
         self.cv_scores_dir = cv_scores_dir
         self.bootstrap_dir = bootstrap_dir
-        self.conf_matrixes_dir  = conf_matrixes_dir
+        self.conf_matrixes_dir = conf_matrixes_dir
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
         self.modality_to_color = {"vis": colors[2], "aud": colors[0], "cro": colors[1]}
@@ -37,8 +39,7 @@ class Plotter():
 
         # create the necessary directories
         for di in [cv_scores_dir, bootstrap_dir, conf_matrixes_dir]:
-            if not os.path.exists(plot_dir + "/" + di):
-                os.makedirs(plot_dir + "/" + di)
+            create_directory(plot_dir + "/" + di)
 
         plt.rcParams.update({'font.size': 12})
 
@@ -53,7 +54,7 @@ class Plotter():
         if legend is not None:
             if legend is True:
                 plt.legend(loc="lower center")
-            else :
+            else:
                 plt.legend(loc=legend)
         plt.title(label, wrap=True)
         plt.xlabel(xlabel)
@@ -62,13 +63,13 @@ class Plotter():
         plt.close()
 
     def bar_plot_with_points(self, df, chance_level, pvals):
-        if df["Region"].nunique() <= 2 :
+        if df["Region"].nunique() <= 2:
             plt.figure(figsize=(10, 10))
-        else :
+        else:
             plt.figure(figsize=(23, 10))
 
         hue_order = ["Vision", "Audition"]
-        if df["Modality"].nunique() <= 1 :
+        if df["Modality"].nunique() <= 1:
             hue_order = ["Cross-modal"]
 
         # Draw the bar chart
@@ -113,11 +114,11 @@ class Plotter():
             star = stars(pvals[i])
             if star != "ns":
                 bplot.annotate(star,
-                    (bar.get_x() + bar.get_width() / 2, 0), 
-                    ha="center", va="center",
-                    size=12, xytext=(0, 8),
-                    textcoords="offset points",
-                    color = "white")
+                               (bar.get_x() + bar.get_width() / 2, 0),
+                               ha="center", va="center",
+                               size=12, xytext=(0, 8),
+                               textcoords="offset points",
+                               color="white")
             i += 1
 
         g.legend_.remove()
@@ -132,16 +133,19 @@ class Plotter():
         ylabel = "CV score"
 
         for region in ["PT", "V5"]:
-            labels = ["aud_"+region+"_L", "aud_"+region+"_R", "vis_"+region+"_L", "vis_"+region+"_R"]
-            labels_pvals = ["vis_"+region+"_L", "vis_"+region+"_R", "aud_"+region+"_L", "aud_"+region+"_R"]
+            labels = ["aud_" + region + "_L", "aud_" + region + "_R", "vis_" + region + "_L", "vis_" + region + "_R"]
+            labels_pvals = ["vis_" + region + "_L", "vis_" + region + "_R", "aud_" + region + "_L",
+                            "aud_" + region + "_R"]
             df_within = verbose_dataframe(df[labels], self.subject_ids)
             self.bar_plot_with_points(df_within, chance_level, [pvals[l] for l in labels_pvals])
-            self.save("Decoding within modality in "+region, self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
+            self.save("Decoding within modality in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
+                      legend=None)
 
-            labels = ["cross_"+region+"_L", "cross_"+region+"_R"]
+            labels = ["cross_" + region + "_L", "cross_" + region + "_R"]
             df_cross = verbose_dataframe(df[labels], self.subject_ids)
             self.bar_plot_with_points(df_cross, chance_level, [pvals[l] for l in labels])
-            self.save("Decoding across modalities in "+region, self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
+            self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
+                      legend=None)
 
         labels = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
         labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
@@ -159,9 +163,11 @@ class Plotter():
         else:
             beginning = begin + " for " + self.translation[modality[:3]][1] + " motion in "
         title = beginning + self.translation[modality[-1:]] + " " + modality[-4:-2]
-        
-        if pval > 0 : return title + " (estimated p-value = " + str(min(round(pval, 6),1)) + ")"
-        else : return title
+
+        if pval > 0:
+            return title + " (estimated p-value = " + str(min(round(pval, 6), 1)) + ")"
+        else:
+            return title
 
     def plot_bootstrap(self, df_bootstrap, df_group_results, pvals, n_bins):
         """ function to plot the bootstrap results. we plot a histogram of the bootstrap results for each modality and 
@@ -189,11 +195,77 @@ class Plotter():
                     var_cfm[i][j] = np.var(cfm[i][j])
 
             for stat, values in zip(["mean", "variance"], [mean_cfm, var_cfm]):
-                df = pd.DataFrame(values, index = classes, columns = classes)
-                pylab.figure(figsize=(8,8))
-                sns.heatmap(df, linewidth = 1, annot = True, cmap = cm.YlOrRd)
-                title = self.generate_title("Confusion Matrix "+stat, modality, -1)
+                df = pd.DataFrame(values, index=classes, columns=classes)
+                pylab.figure(figsize=(8, 8))
+                sns.heatmap(df, linewidth=1, annot=True, cmap=cm.YlOrRd)
+                title = self.generate_title("Confusion Matrix " + stat, modality, -1)
                 self.save(title, self.conf_matrixes_dir, "true label", "predicted label", None)
+
+    def get_score_per_analysis(self, val_sc_df, group_by, group_by_values, masks_exist):
+        score_per_analysis = dict()
+        str_group_by_values = [str(val) for val in group_by_values]
+
+        for analysis in val_sc_df:
+            score_per_analysis[analysis] = dict()
+            for i, subj in enumerate(self.subject_ids):
+                if masks_exist[analysis.split("_", 1)[1]][subj] :
+                    combs = val_sc_df[analysis][subj].replace(" ", "").replace("{", "").replace("}", "").replace("\'", "").split(",")
+                    for comb in combs:
+                        index = 0
+                        new_key = ""
+                        tmp = comb.split(":")
+                        score = float(tmp[1])
+                        indiv_params = tmp[0].split("-")
+                        for param in indiv_params:
+                            key = param.split("__")[1]
+                            tmp_ = param.split("=")
+                            name = tmp_[0].split("__")[1]
+                            value = tmp_[1]
+                            if not name == group_by:
+                                new_key += " - " + key
+                            else:
+                                index = str_group_by_values.index(value)
+
+                        new_key = new_key.split(" - ", 1)[1]
+
+                        if new_key in score_per_analysis[analysis]:
+                            score_per_analysis[analysis][new_key][i, index] = score
+                        else:
+                            score_per_analysis[analysis][new_key] = np.zeros((len(self.subject_ids), len(group_by_values)))
+                            score_per_analysis[analysis][new_key][i, 0] = score
+
+        for analysis in score_per_analysis:
+            for key in score_per_analysis[analysis]:
+                tab = score_per_analysis[analysis][key]
+                tab = tab.astype('float')
+                tab[tab == 0] = 'nan'
+                score_per_analysis[analysis][key] = np.nanmean(tab, axis=0)
+
+        return score_per_analysis
+
+    def plot_validation_scores_hyper_param(self, val_sc_df, x_label, x_values, masks_exist, chance_level=True, log10_scale = False):
+        """
+        function to plot average validation scores accumulated by GridSearch along the process
+        :param val_sc_df: dataframe as given by load_data.retrieve_val_scores
+        :param x_label: string with the paramater to put in x-axis
+        :param x_values: values that the parameter will take
+        """
+        val_dir = self.plot_dir+"/validation_scores"
+        create_directory(val_dir)
+        score_per_analysis = self.get_score_per_analysis(val_sc_df, x_label, x_values, masks_exist)
+        for modality in score_per_analysis:
+            plt.figure(figsize=(8, 8))
+            for params in score_per_analysis[modality] :
+                if log10_scale :
+                    plt.plot([math.log10(x) for x in x_values], score_per_analysis[modality][params], label=params)
+                else :
+                    plt.plot(x_values, score_per_analysis[modality][params], label=params)
+            plt.ylim(0.2, 0.5)
+            if chance_level:
+                plt.axhline(0.25, color="black", alpha=0.5)
+            title = self.generate_title("Validation", modality, pval=-1)
+            x_lab = "log10("+x_label+")" if log10_scale else x_label
+            self.save(title, "validation_scores", "validation score", x_lab, legend="best")
 
 
 def plot_average_voxel_intensities(maps, classes, n_subjects):
@@ -245,8 +317,10 @@ def str_to_array(str_array, length):
 
 
 def stars(pval):
-    if pval > 0.05 : return "ns"
-    if pval <= 0.0001 : return "****"
-    if pval <= 0.001 : return "***"
-    if pval <= 0.01 : return "**"
-    else: return "*"
+    if pval > 0.05: return "ns"
+    if pval <= 0.0001: return "****"
+    if pval <= 0.001: return "***"
+    if pval <= 0.01:
+        return "**"
+    else:
+        return "*"

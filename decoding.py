@@ -70,7 +70,7 @@ class Decoder:
                 conf_matrix[name] += confusion_matrix(y_test, predictions)
 
                 val_results = model.cv_results_
-                val_params = [str(elem).replace(" ","").replace(":","=").replace("\'","").replace("{","").replace("}","") for elem in val_results['params']]
+                val_params = [str(elem).replace(" ","").replace(":","=").replace("\'","").replace("{","").replace("}","").replace(",","-") for elem in val_results['params']]
                 l = [str(i) for i in range(model.cv)]
                 keys = ['split'+i+'_test_score' for i in l]
                 tab = [val_results[key] for key in keys]
