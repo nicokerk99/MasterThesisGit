@@ -4,6 +4,7 @@ import time
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
 from metrics import accuracy
+from utility import *
 
 
 def permute_labels(labels, gap, n_classes):
@@ -29,12 +30,13 @@ class Decoder:
     @n_perm : number of permutations to make when inspecting significance
     @masks_exist : list of dictionaries which tells for each subject which masks are present or not"""
 
-    def __init__(self, models, n_classes, n_splits, seed, n_perm):
+    def __init__(self, models, n_classes, n_splits, seed, n_perm, verbose=True):
         self.models = models
         self.n_classes = n_classes
         self.n_splits = n_splits
         self.seed = seed
         self.n_perm = n_perm
+        self.verbose = verbose
         self.masks_exist = None
 
     def set_masks_exist(self, masks_exist):
@@ -50,6 +52,7 @@ class Decoder:
         :return: the sum of confusion matrixes obtained in each fold """
 
         conf_matrix = {name : np.zeros((self.n_classes, self.n_classes)) for name in self.models}
+        validation_scores = dict((name, list()) for name in self.models)
         for ind in range(self.n_splits):
             test_index = range(ind*self.n_classes, (ind+1)*self.n_classes)
             train_index = [i for i in range(len(brain_map)) if i not in test_index]
@@ -66,12 +69,24 @@ class Decoder:
                 predictions = model.predict(X_test)
                 conf_matrix[name] += confusion_matrix(y_test, predictions)
 
+                val_results = model.cv_results_
+                val_params = [str(elem).replace(" ","").replace(":","=").replace("\'","").replace("{","").replace("}","").replace(",","-") for elem in val_results['params']]
+                l = [str(i) for i in range(model.cv)]
+                keys = ['split'+i+'_test_score' for i in l]
+                tab = [val_results[key] for key in keys]
+                means = np.mean(tab, axis=0)
+                val_scores = dict(zip(val_params, means.tolist()))
+                validation_scores[name].append(val_scores)
+
+        for name in self.models:
+            validation_scores[name] = average_dicos(validation_scores[name])
+
         if return_model:
             for name in self.models:
                 self.models[name].fit(brain_map, labels)  # re-fitting the model on all data
-            return conf_matrix, self.models
+            return conf_matrix, validation_scores, self.models
         else:
-            return conf_matrix
+            return conf_matrix, validation_scores
 
     def p_value_random_permutations(self, brain_map, labels, base_score):
         """ Attention, this function is based on labels with consecutive, balanced categories, like ['U','D','R','L',
@@ -105,12 +120,12 @@ class Decoder:
         :param do_pval: boolean to tell if it is needed to estimate a p-value
         :return: cross-validation confusion matrix, p-value """
 
-        conf_matrix = self.cross_validate(brain_maps[0], labels)
+        conf_matrix, val_scores = self.cross_validate(brain_maps[0], labels)
         base_score = [accuracy(conf_matrix[name], self.n_classes) for name in self.models]
         p_val, conf_matrix_perm = None, None
         if do_pval:
             p_val, conf_matrix_perm = self.p_value_random_permutations(brain_maps[0], labels, base_score)
-        return p_val, conf_matrix, conf_matrix_perm
+        return p_val, conf_matrix, conf_matrix_perm, val_scores
 
     def classify_tasks_regions(self, brain_maps, labels, tasks_names, regions_names, id_subj, do_pval=True):
         """
@@ -124,26 +139,32 @@ class Decoder:
         p_values = dict()
         conf_matrixes = dict()
         conf_matrixes_perms = dict()
+        val_scores = dict()
 
         for task_name in tasks_names:
             for region_name in regions_names:
                 if self.masks_exist[id_subj][region_name]:
                     _maps = [maps[region_name] for maps in brain_maps[task_name]]
                     key = task_name + "_" + region_name
-                    p_values[key], conf_matrixes[key], conf_matrixes_perms[key] = self.classify(_maps, labels[task_name], do_pval)
+                    p_values[key], conf_matrixes[key], conf_matrixes_perms[key], val_scores[key] = self.classify(_maps, labels[task_name], do_pval)
 
-        return p_values, conf_matrixes, conf_matrixes_perms
+        return p_values, conf_matrixes, conf_matrixes_perms, val_scores
 
     def within_modality_decoding(self, maps, labels, subjects_ids, tasks_regions):
+        start_time = time.time()
         conf_matrixes = [dict() for _ in subjects_ids]
+        val_scores = [dict() for _ in subjects_ids]
         for i, subj_id in enumerate(subjects_ids):
             # within-modality decoding : training on a task and decoding on other samples from same task
             for tasks, regions in tasks_regions:
-                _, cf, _ = self.classify_tasks_regions(maps[i], labels, tasks, regions, i, do_pval=False)
+                _, cf, _, vs = self.classify_tasks_regions(maps[i], labels, tasks, regions, i, do_pval=False)
                 conf_matrixes[i].update(cf)
+                val_scores[i].update(vs)
             # print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(len(subjects_ids)))
 
-        return conf_matrixes
+        duration = time.time()-start_time
+        if self.verbose : print("done in "+str(duration)+" seconds")
+        return conf_matrixes, val_scores
 
     def unary_cross_modal_CV_decoding(self, brain_maps, labels, tasks_names, regions_names, id_subj):
         """
@@ -156,6 +177,7 @@ class Decoder:
 
         def sub(task_order):
             conf_matrix = dict()
+            val_scores = dict()
             key = "cross_"
             for region_name in regions_names:
                 if self.masks_exist[id_subj][region_name] :
@@ -167,18 +189,22 @@ class Decoder:
                         map_0 = (scaler.fit_transform(_maps_0[i].T)).T
                         map_1 = (scaler.fit_transform(_maps_1[i].T)).T
 
-                        conf_mat = self.cross_validate(map_0, labels[task_order[0]], return_model=False,
+                        conf_mat, val_sc = self.cross_validate(map_0, labels[task_order[0]], return_model=False,
                                                        brain_map_2=map_1)
                         conf_matrix[key + region_name] = conf_mat
-            return conf_matrix
+                        val_scores[key + region_name] = val_sc
+            return conf_matrix, val_scores
 
-        cfm_0 = sub(tasks_names)
-        cfm_1 = sub(tasks_names[::-1])
+        cfm_0, vs_0 = sub(tasks_names)
+        cfm_1, vs_1 = sub(tasks_names[::-1])
         for name in self.models:
             for key in cfm_0:
                 cfm_0[key][name] += cfm_1[key][name]
+        for key in vs_0 :
+            for sub_key in vs_0[key]:
+                vs_0[key][sub_key] = average_dicos([vs_0[key][sub_key],vs_1[key][sub_key]])
 
-        return cfm_0
+        return cfm_0, vs_0
 
     def unary_cross_modal_decoding(self, brain_maps, labels, tasks_names, regions_names, id_subj):
         """
@@ -217,15 +243,20 @@ class Decoder:
         return cfm_0
 
     def cross_modality_decoding(self, maps, labels, subjects_ids, tasks_regions):
+        start_time = time.time()
         cross_conf_matrixes = [dict() for _ in subjects_ids]
+        val_scores = [dict() for _ in subjects_ids]
 
         for i, subj_id in enumerate(subjects_ids):
             # cross-modal decoding : training on a task and decoding on samples from another task
             for tasks, regions in tasks_regions:
-                cross_cf = self.unary_cross_modal_CV_decoding(maps[i], labels, tasks, regions, i)
+                cross_cf, cross_vs = self.unary_cross_modal_CV_decoding(maps[i], labels, tasks, regions, i)
                 cross_conf_matrixes[i].update(cross_cf)
+                val_scores[i].update(cross_vs)
 
-        return cross_conf_matrixes
+        duration = time.time()-start_time
+        if self.verbose : print("done in "+str(duration)+" seconds")
+        return cross_conf_matrixes, val_scores
 
     def produce_permuted_labels(self, labels, n_perm):
         """

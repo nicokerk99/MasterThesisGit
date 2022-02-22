@@ -53,7 +53,7 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
     for modality in df_bootstrap:
         gv = df_group_results[modality][0]
         count = len([v for v in df_bootstrap[modality] if v > gv])
-        pvals[modality] = (count+1)/(len(df_bootstrap[modality])+1)*4
+        pvals[modality] = ((count+1)/(len(df_bootstrap[modality])+1)) * 4
     return pvals
 
 

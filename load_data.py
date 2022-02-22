@@ -104,10 +104,25 @@ def retrieve_cv_matrixes(out_directory):
     return cv_within_df
 
 
+def retrieve_val_scores(out_directory):
+    # joining dataframes in prevision of plotting
+    cv_within_df = pd.read_csv(out_directory + "validation_scores_within.csv", index_col=0)
+    cv_cross_df = pd.read_csv(out_directory + "validation_scores_cross.csv", index_col=0)
+    for col in cv_cross_df.columns: cv_within_df[col] = cv_cross_df[col]
+
+    return cv_within_df
+
+
 def retrieve_bootstrap_metric(out_directory, metric):
     bootstrap_within_df = pd.read_csv(out_directory + metric + "_bootstraps_within.csv", index_col=0)
     bootstrap_cross_df = pd.read_csv(out_directory + metric + "_bootstraps_cross.csv", index_col=0)
     for col in bootstrap_cross_df.columns: bootstrap_within_df[col] = bootstrap_cross_df[col]
+
+    return bootstrap_within_df
+
+
+def retrieve_masks_exist(out_directory):
+    bootstrap_within_df = pd.read_csv(out_directory + "masks_exist.csv", index_col=0)
 
     return bootstrap_within_df
 
