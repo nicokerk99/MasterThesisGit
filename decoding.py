@@ -30,7 +30,7 @@ class Decoder:
     @n_perm : number of permutations to make when inspecting significance
     @masks_exist : list of dictionaries which tells for each subject which masks are present or not"""
 
-    def __init__(self, models, n_classes, n_splits, seed, n_perm, verbose=True):
+    def __init__(self, models, n_classes, n_splits, seed, n_perm, verbose=1):
         self.models = models
         self.n_classes = n_classes
         self.n_splits = n_splits
@@ -161,9 +161,11 @@ class Decoder:
                 conf_matrixes[i].update(cf)
                 val_scores[i].update(vs)
             # print("Within-modality decoding done for subject "+str(subj_id)+"/"+str(len(subjects_ids)))
+            duration = time.time()-start_time
+            if self.verbose > 1 : print("subject "+str(subj_id)+"/"+str(len(subjects_ids))+" done in "+str(duration)+" seconds")
 
         duration = time.time()-start_time
-        if self.verbose : print("done in "+str(duration)+" seconds")
+        if self.verbose > 0 : print("done in "+str(duration)+" seconds")
         return conf_matrixes, val_scores
 
     def unary_cross_modal_CV_decoding(self, brain_maps, labels, tasks_names, regions_names, id_subj):
@@ -253,9 +255,11 @@ class Decoder:
                 cross_cf, cross_vs = self.unary_cross_modal_CV_decoding(maps[i], labels, tasks, regions, i)
                 cross_conf_matrixes[i].update(cross_cf)
                 val_scores[i].update(cross_vs)
+            duration = time.time()-start_time
+            if self.verbose > 1 : print("subject "+str(subj_id)+"/"+str(len(subjects_ids))+"done in "+str(duration)+" seconds")
 
         duration = time.time()-start_time
-        if self.verbose : print("done in "+str(duration)+" seconds")
+        if self.verbose > 0 : print("done in "+str(duration)+" seconds")
         return cross_conf_matrixes, val_scores
 
     def produce_permuted_labels(self, labels, n_perm):
@@ -272,7 +276,7 @@ class Decoder:
 
         return perm_labels
 
-    def score_bootstrapped_permutations(self, n_single_perm, labels, tasks_regions, maps, n_subjects, within_modality, verbose=True):
+    def score_bootstrapped_permutations(self, n_single_perm, labels, tasks_regions, maps, n_subjects, within_modality):
         start_time = time.time()
         cfm_n_perm = [None]*n_subjects
         for i in range(n_subjects):
@@ -291,7 +295,7 @@ class Decoder:
 
             cfm_n_perm[i] = cfm_dicts
 
-            if verbose :
+            if self.verbose > 0 :
                 duration = time.time()-start_time
                 print(str(i+1)+"/"+str(n_subjects)+" subjects in "+str(duration)+" seconds")
 

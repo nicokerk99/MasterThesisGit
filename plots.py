@@ -208,8 +208,10 @@ class Plotter:
         for analysis in val_sc_df:
             score_per_analysis[analysis] = dict()
             for i, subj in enumerate(self.subject_ids):
-                if masks_exist[analysis.split("_", 1)[1]][subj] :
-                    combs = val_sc_df[analysis][subj].replace(" ", "").replace("{", "").replace("}", "").replace("\'", "").split(",")
+                if masks_exist[analysis.split("_", 1)[1]][subj]:
+                    combs = val_sc_df[analysis][subj].replace(" ", "").replace("{", "").replace("}", "").replace("\'",
+                                                                                                                 "").split(
+                        ",")
                     for comb in combs:
                         index = 0
                         new_key = ""
@@ -226,12 +228,14 @@ class Plotter:
                             else:
                                 index = str_group_by_values.index(value)
 
-                        new_key = new_key.split(" - ", 1)[1]
+                        if len(new_key) > 0 :
+                            new_key = new_key.split(" - ", 1)[1]
 
                         if new_key in score_per_analysis[analysis]:
                             score_per_analysis[analysis][new_key][i, index] = score
                         else:
-                            score_per_analysis[analysis][new_key] = np.zeros((len(self.subject_ids), len(group_by_values)))
+                            score_per_analysis[analysis][new_key] = np.zeros(
+                                (len(self.subject_ids), len(group_by_values)))
                             score_per_analysis[analysis][new_key][i, 0] = score
 
         for analysis in score_per_analysis:
@@ -243,28 +247,29 @@ class Plotter:
 
         return score_per_analysis
 
-    def plot_validation_scores_hyper_param(self, val_sc_df, x_label, x_values, masks_exist, chance_level=True, log10_scale = False):
+    def plot_validation_scores_hyper_param(self, val_sc_df, x_label, x_values, masks_exist, chance_level=True,
+                                           log10_scale=False):
         """
         function to plot average validation scores accumulated by GridSearch along the process
         :param val_sc_df: dataframe as given by load_data.retrieve_val_scores
         :param x_label: string with the paramater to put in x-axis
         :param x_values: values that the parameter will take
         """
-        val_dir = self.plot_dir+"/validation_scores"
+        val_dir = self.plot_dir + "/validation_scores"
         create_directory(val_dir)
         score_per_analysis = self.get_score_per_analysis(val_sc_df, x_label, x_values, masks_exist)
         for modality in score_per_analysis:
             plt.figure(figsize=(8, 8))
-            for params in score_per_analysis[modality] :
-                if log10_scale :
+            for params in score_per_analysis[modality]:
+                if log10_scale:
                     plt.plot([math.log10(x) for x in x_values], score_per_analysis[modality][params], label=params)
-                else :
+                else:
                     plt.plot(x_values, score_per_analysis[modality][params], label=params)
             plt.ylim(0.2, 0.5)
             if chance_level:
                 plt.axhline(0.25, color="black", alpha=0.5)
             title = self.generate_title("Validation score", modality, pval=-1)
-            x_lab = "log10("+x_label+")" if log10_scale else x_label
+            x_lab = "log10(" + x_label + ")" if log10_scale else x_label
             self.save(title, "validation_scores", "validation score", x_lab, legend="best")
 
 
