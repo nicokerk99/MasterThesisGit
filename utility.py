@@ -57,8 +57,10 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
     return pvals
 
 
-def verbose_dataframe(df, subjects_ids):
+def verbose_dataframe(df, subjects_ids, compare=False):
     column_names = ["Modality", "Region", "Score", "Score_mean_dev"]
+    if compare :
+        column_names = ["Analysis", "Score", "Score_mean_dev"]
     vb_df = pd.DataFrame(columns=column_names)
     for entry in df :
         keywords = entry.split('_')
@@ -70,14 +72,19 @@ def verbose_dataframe(df, subjects_ids):
         region = "V5 " if "V5" in keywords else "PT "
         region += "L" if "L" in keywords else "R"
 
+        analysis = mod + " " + region
+
         n = np.sqrt(len(df[entry]) - df[entry].isnull().sum())
         avg = np.mean(df[entry])
         
         for i in subjects_ids:
             if df[entry][i]:
                 new_entry = dict()
-                new_entry["Modality"] = mod
-                new_entry["Region"] = region
+                if compare :
+                    new_entry["Analysis"] = analysis
+                else :
+                    new_entry["Modality"] = mod
+                    new_entry["Region"] = region
                 new_entry["Score"] = df[entry][i]
                 new_entry["Score_mean_dev"] = df[entry][i]/n + avg - avg/n
                 vb_df = vb_df.append(new_entry, ignore_index=True)
