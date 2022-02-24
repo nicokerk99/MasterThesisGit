@@ -7,6 +7,7 @@ import numpy as np
 import seaborn as sns
 import os
 from utility import *
+from load_data import *
 import math
 
 
@@ -33,7 +34,7 @@ class Plotter:
         self.color = ListedColormap(cm.get_cmap("brg")(np.linspace(0, 0.5, 256)))
         colors = self.color(np.linspace(0, 1, 3))
         self.modality_to_color = {"vis": colors[2], "aud": colors[0], "cro": colors[1]}
-        self.name_to_color = {"Vision": colors[2], "Audition": colors[0], "Cross-modal": colors[1]}
+        self.analysis_to_color = {"Vision": colors[2], "Audition": colors[0], "Cross-modal": colors[1]}
         self.translation = {"vis": ["vision", "visual"], "aud": ["audition", "auditive"], "cro": "cross-modal",
                             "R": "right", "L": "left"}
 
@@ -62,66 +63,82 @@ class Plotter:
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight')
         plt.close()
 
-    def bar_plot_with_points(self, df, chance_level, pvals):
-        if df["Region"].nunique() <= 2:
-            plt.figure(figsize=(10, 10))
-        else:
-            plt.figure(figsize=(23, 10))
+    def bar_plot_with_points(self, df, chance_level, pvals=None, compare=False):
+        if not compare :
+            if df["Region"].nunique() <= 2:
+                plt.figure(figsize=(10, 10))
+            else:
+                plt.figure(figsize=(23, 10))
 
-        hue_order = ["Vision", "Audition"]
-        if df["Modality"].nunique() <= 1:
-            hue_order = ["Cross-modal"]
+            x = "Region"
+            hue = "Modality"
+            hue_order = ["Vision", "Audition"]
+            palette = self.analysis_to_color
+            if df["Modality"].nunique() <= 1:
+                hue_order = ["Cross-modal"]
+
+        else :
+            plt.figure(figsize=(40, 10))
+            x = "Analysis"
+            hue_order = compare
+            hue = "Classifier"
+            palette = None
 
         # Draw the bar chart
         sns.catplot(
             data=df,
             kind="bar",
             ci=None,
-            x="Region",
+            x=x,
             y="Score",
-            hue="Modality",
+            hue=hue,
             hue_order=hue_order,
-            palette=self.name_to_color,
+            palette=palette,
             alpha=.7,
         )
-        g = sns.stripplot(
-            data=df,
-            x="Region",
-            y="Score",
-            hue="Modality",
-            hue_order=hue_order,
-            dodge=True,
-            palette=self.name_to_color,
-            alpha=0.6,
-            size=7
-        )
+        if not compare :
+            g = sns.stripplot(
+                data=df,
+                x=x,
+                y="Score",
+                hue=hue,
+                hue_order=hue_order,
+                dodge=True,
+                palette=palette,
+                alpha=0.6,
+                size=7
+            )
         bplot = sns.barplot(
             data=df,
             ci="sd",
             capsize=0.1,
             errcolor="black",
             errwidth=1.0,
-            x="Region",
+            x=x,
             y="Score_mean_dev",
-            hue="Modality",
+            hue=hue,
             hue_order=hue_order,
-            palette=self.name_to_color,
-            alpha=0.3,
+            palette=palette,
+            alpha=0.1,
         )
 
-        i = 0
-        for bar in bplot.patches[:len(pvals)]:
-            star = stars(pvals[i])
-            if star != "ns":
-                bplot.annotate(star,
-                               (bar.get_x() + bar.get_width() / 2, 0),
-                               ha="center", va="center",
-                               size=12, xytext=(0, 8),
-                               textcoords="offset points",
-                               color="white")
-            i += 1
+        bplot.legend_.remove()
 
-        g.legend_.remove()
+        if not compare :
+            i = 0
+            for bar in bplot.patches[:len(pvals)]:
+                star = stars(pvals[i])
+                if star != "ns":
+                    bplot.annotate(star,
+                                   (bar.get_x() + bar.get_width() / 2, 0),
+                                   ha="center", va="center",
+                                   size=12, xytext=(0, 8),
+                                   textcoords="offset points",
+                                   color="white")
+                i += 1
+
+        else :
+            plt.xticks(rotation=90)
 
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
@@ -228,7 +245,7 @@ class Plotter:
                             else:
                                 index = str_group_by_values.index(value)
 
-                        if len(new_key) > 0 :
+                        if len(new_key) > 0:
                             new_key = new_key.split(" - ", 1)[1]
 
                         if new_key in score_per_analysis[analysis]:
@@ -259,7 +276,7 @@ class Plotter:
         create_directory(val_dir)
         score_per_analysis = self.get_score_per_analysis(val_sc_df, x_label, x_values, masks_exist)
         for modality in score_per_analysis:
-            plt.figure(figsize=(8, 8))
+            plt.figure(figsize=(12, 8))
             for params in score_per_analysis[modality]:
                 if log10_scale:
                     plt.plot([math.log10(x) for x in x_values], score_per_analysis[modality][params], label=params)
@@ -271,6 +288,34 @@ class Plotter:
             title = self.generate_title("Validation score", modality, pval=-1)
             x_lab = "log10(" + x_label + ")" if log10_scale else x_label
             self.save(title, "validation_scores", "validation score", x_lab, legend="best")
+
+    def plot_tests_scores_from_different_folders(self, folder_names, labels):
+        """
+        plot test scores as bar plots for different classifiers
+        :param folder_names: the output folders to retrieve the scores
+        :param labels: the names of the classifiers to put on the legend of the plot
+        :return:
+        """
+        labels_within = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
+        labels_cross = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
+        big_within_df = pd.DataFrame()
+        big_cross_df = pd.DataFrame()
+        for i, name in enumerate(folder_names):
+            cv_df = retrieve_cv_metric(name, "accuracy")
+
+            df_within = verbose_dataframe(cv_df[labels_within], self.subject_ids, compare=True)
+            df_within["Classifier"] = [labels[i]]*df_within.shape[0]
+            big_within_df = pd.concat([big_within_df, df_within])
+
+            df_cross = verbose_dataframe(cv_df[labels_cross], self.subject_ids, compare=True)
+            df_cross["Classifier"] = [labels[i]]*df_cross.shape[0]
+            big_cross_df = pd.concat([big_cross_df, df_cross])
+
+        self.bar_plot_with_points(big_within_df, True, pvals=None, compare=labels)
+        self.save("Comparing classifiers within modality", "", "Accuracy", xlabel="Analysis", legend=None)
+
+        self.bar_plot_with_points(big_cross_df, True, pvals=None, compare=labels)
+        self.save("Comparing classifiers across modalities", "", "Accuracy", xlabel="Analysis", legend=None)
 
 
 def plot_average_voxel_intensities(maps, classes, n_subjects):
