@@ -288,9 +288,9 @@ class Decoder:
                 for task_regions in tasks_regions :
                     tasks, regions = task_regions
                     if within_modality :
-                        _, cf, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, i, do_pval=False)
+                        _, cf, _, _ = self.classify_tasks_regions(maps[i], labels_dico, tasks, regions, i, do_pval=False)
                     else :
-                        cf = self.unary_cross_modal_CV_decoding(maps[i], labels_dico, tasks, regions, i)
+                        cf, _ = self.unary_cross_modal_CV_decoding(maps[i], labels_dico, tasks, regions, i)
                     cfm_dicts[j].update(cf)
 
             cfm_n_perm[i] = cfm_dicts
