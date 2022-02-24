@@ -7,7 +7,7 @@ __pycache__/
 # Jupyter notebook metadata
 .ipynb_checkpoints
 
-# iutput folders
+# output folders
 out/
 
 # niftii files
