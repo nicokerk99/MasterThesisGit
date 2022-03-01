@@ -26,7 +26,7 @@ def get_maps(id_subjects, folder_name, is_from_mohamed=False):
     return t_maps, beta_maps
 
 
-def get_masks(id_subjects, folder_name, plot=False):
+def get_masks(id_subjects, folder_name, plot=False, is_from_mohamed=False):
     """ returns the masks for the 4 regions('V5_R', 'V5_L', 'PT_R', 'PT_L') in a dictionary by subject
     and a dictionary of booleans telling if the mask exists or not.
       @:param : id_subjects is a list of subject id's (ints) from which you want to get the maps
@@ -42,10 +42,11 @@ def get_masks(id_subjects, folder_name, plot=False):
             ide = "0" + ide
 
         for name in masks_names:
-            my_file = Path(folder_name + "/" + name + "_sub_" + ide + ".nii")
+            underscore = "" if is_from_mohamed else "_"
+            my_file = Path(folder_name + "/" + name + "_sub" + underscore + ide + ".nii")
             if my_file.is_file():
                 # file exists
-                masks[i][name] = load_img(folder_name + "/" + name + "_sub_" + ide + ".nii")
+                masks[i][name] = load_img(folder_name + "/" + name + "_sub" + underscore + ide + ".nii")
                 masks_exist[i][name] = True
                 if plot:
                     plot_glass_brain(masks[i][name], title=name + " - subject " + ide)
@@ -62,7 +63,7 @@ def load_full_data(subjects_ids, n_classes, nb_runs, maps_folder="brain_maps", m
     masks_exist = [dict() for _ in subjects_ids]
     for i, subj_id in enumerate(subjects_ids):
         t_maps, beta_maps = get_maps([subj_id], maps_folder, is_from_mohamed)
-        masks, masks_present = get_masks([subj_id], folder_name=masks_folder, plot=False)
+        masks, masks_present = get_masks([subj_id], folder_name=masks_folder, plot=False, is_from_mohamed=is_from_mohamed)
         if use_t_maps :
             maps = apply_mask_to_maps(t_maps, masks, masks_present)
         else :
