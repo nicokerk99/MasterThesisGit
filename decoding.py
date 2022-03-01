@@ -256,7 +256,7 @@ class Decoder:
                 cross_conf_matrixes[i].update(cross_cf)
                 val_scores[i].update(cross_vs)
             duration = time.time()-start_time
-            if self.verbose > 1 : print("subject "+str(subj_id)+"/"+str(len(subjects_ids))+"done in "+str(duration)+" seconds")
+            if self.verbose > 1 : print("subject "+str(subj_id)+"/"+str(len(subjects_ids))+" done in "+str(duration)+" seconds")
 
         duration = time.time()-start_time
         if self.verbose > 0 : print("done in "+str(duration)+" seconds")
