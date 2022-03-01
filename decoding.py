@@ -2,6 +2,7 @@ import random
 import numpy as np
 import time
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import confusion_matrix
 from metrics import accuracy
 from utility import *
@@ -67,16 +68,21 @@ class Decoder:
                 model = self.models[name]
                 model.fit(X_train, y_train)
                 predictions = model.predict(X_test)
+                test_score_associated = model.score(X_test, y_test)
+                train_score_associated = model.score(X_train, y_train)
                 conf_matrix[name] += confusion_matrix(y_test, predictions)
 
-                val_results = model.cv_results_
-                val_params = [str(elem).replace(" ","").replace(":","=").replace("\'","").replace("{","").replace("}","").replace(",","-") for elem in val_results['params']]
-                l = [str(i) for i in range(model.cv)]
-                keys = ['split'+i+'_test_score' for i in l]
-                tab = [val_results[key] for key in keys]
-                means = np.mean(tab, axis=0)
-                val_scores = dict(zip(val_params, means.tolist()))
-                validation_scores[name].append(val_scores)
+                if isinstance(model, GridSearchCV) :
+                    val_results = model.cv_results_
+                    val_params = [str(elem).replace(" ","").replace(":","=").replace("\'","").replace("{","").replace("}","").replace(",","-") for elem in val_results['params']]
+                    l = [str(i) for i in range(len(model.cv))]
+                    keys = ['split'+i+'_test_score' for i in l]
+                    tab = [val_results[key] for key in keys]
+                    means = np.mean(tab, axis=0)
+                    val_scores = dict(zip(val_params, means.tolist()))
+                    validation_scores[name].append(val_scores)
+                else :
+                    validation_scores[name].append(0)
 
         for name in self.models:
             validation_scores[name] = average_dicos(validation_scores[name])
