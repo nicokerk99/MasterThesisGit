@@ -29,6 +29,12 @@ def compute_accuracy_bootstrap(n_subjects, n_single_perm, confusion_matrixes_boo
     return scores
 
 
+def compute_accuracy_variance(filename, mode):
+    accuracies = pd.read_csv(filename+"accuracy_"+mode+".csv")
+    var = accuracies.var()
+    var.to_csv(filename+"var_"+mode+".csv")
+
+
 def accuracy(confusion_matrix, n_classes):
     sum_Tis = sum([confusion_matrix[i][i] for i in range(n_classes)])
     return sum_Tis/np.sum(confusion_matrix)
