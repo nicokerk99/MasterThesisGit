@@ -317,6 +317,36 @@ class Plotter:
         self.bar_plot_with_points(big_cross_df, True, pvals=None, compare=labels)
         self.save("Comparing classifiers across modalities", "", "Accuracy", xlabel="Analysis", legend=None)
 
+    def plot_accuracy_var_from_different_folders(self, folder_names, labels):
+        for mode in ["within", "cross"]:
+            big_df = pd.DataFrame()
+            for i, name in enumerate(folder_names):
+                df = pd.read_csv(name+"var_"+mode+".csv", index_col=0)
+                new_cols = df.index[1:]
+                temp_df = pd.DataFrame(columns=new_cols, index=[i], dtype=float)
+                temp_df[new_cols] = df[df.columns[0]].values[1:]
+
+                df_mode = verbose_dataframe(temp_df[new_cols], temp_df.index, compare=True)
+                df_mode["Voxel percentage"] = [labels[i]]*df_mode.shape[0]
+
+                big_df = pd.concat([big_df, df_mode], ignore_index=True)
+            
+            plt.figure(figsize=(40, 10))
+            # Draw the bar chart
+            sns.catplot(
+                data=big_df,
+                kind="bar",
+                ci=None,
+                x="Analysis",
+                y="Score",
+                hue="Voxel percentage",
+                palette=None,
+                alpha=.7,
+            )
+            plt.xticks(rotation=90)
+
+            self.save("Accuracy variance depending on percentage of voxel "+mode+" modality", "", "Accuracy variance", xlabel="Analysis", legend=None)
+
 
 def plot_average_voxel_intensities(maps, classes, n_subjects):
     region = "V5_R"
