@@ -105,20 +105,20 @@ class Plotter:
                 alpha=0.6,
                 size=7
             )
-            bplot = sns.barplot(
-                data=df,
-                ci="sd",
-                capsize=0.1,
-                errcolor="black",
-                errwidth=1.0,
-                x=x,
-                y="Score_mean_dev",
-                hue=hue,
-                hue_order=hue_order,
-                palette=palette,
-                alpha=0.1,
-            )
-            bplot.legend_.remove()
+        bplot = sns.barplot(
+            data=df,
+            ci="sd",
+            capsize=0.1,
+            errcolor="black",
+            errwidth=1.0,
+            x=x,
+            y="Score_mean_dev",
+            hue=hue,
+            hue_order=hue_order,
+            palette=palette,
+            alpha=0.1,
+        )
+        bplot.legend_.remove()
 
         if not compare :
             i = 0
