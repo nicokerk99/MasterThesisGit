@@ -366,6 +366,36 @@ def plot_average_voxel_intensities(maps, classes, n_subjects):
     plt.savefig("plots/average_voxel_intensities" + region + ".png")
 
 
+def plot_normalize_voxel_intensities(maps, classes):
+    region = "V5_R"
+    colors = ["deepskyblue", "cyan", "blue", "royalblue"]
+    n_voxels = maps[0]["vis"][0][region].shape[1]
+    mean_aud = dict()
+
+    for cla in classes:
+        mean_aud[cla] = np.zeros(n_voxels)
+
+    for j, cla in enumerate(classes):
+        for run in range(11) :
+            mean_aud[cla] += maps[1]["aud"][0][region][(run * 4)+j]
+        mean_aud[cla] = np.divide(mean_aud[cla], 11)
+
+    plt.rcParams.update({'font.size': 15})
+    plt.figure(figsize=(12, 8))
+
+    idx = 0
+
+    for cla in classes:
+        plt.plot(range(n_voxels), mean_aud[cla], label="aud - " + cla, color=colors[idx])
+        idx += 1
+
+    plt.xlabel("voxel id")
+    plt.ylabel("intensity")
+    plt.title("Original voxel intensities for audition in " + region)
+    plt.legend()
+    plt.savefig("plots/normalize_voxel_intensities" + region + ".png")
+
+
 def str_to_array(str_array, length):
     vals = [0] * length
     i = 0
