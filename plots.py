@@ -157,6 +157,7 @@ class Plotter:
             labels = ["cross_" + region + "_L", "cross_" + region + "_R"]
             df_cross = verbose_dataframe(df[labels], self.subject_ids)
             self.bar_plot_with_points(df_cross, chance_level, pvals=[pvals[l] for l in labels])
+            plt.ylim(0.2, 0.3)
             self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
                       legend=None)
 
