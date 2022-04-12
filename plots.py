@@ -136,6 +136,8 @@ class Plotter:
         else :
             plt.xticks(rotation=90)
 
+        plt.ylim(0.2, 0.5)
+
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
 
@@ -157,7 +159,7 @@ class Plotter:
             labels = ["cross_" + region + "_L", "cross_" + region + "_R"]
             df_cross = verbose_dataframe(df[labels], self.subject_ids)
             self.bar_plot_with_points(df_cross, chance_level, pvals=[pvals[l] for l in labels])
-            plt.ylim(0.2, 0.3)
+            plt.ylim(0.2, 0.5)
             self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
                       legend=None)
 
