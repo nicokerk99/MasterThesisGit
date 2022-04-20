@@ -289,7 +289,7 @@ class Plotter:
             x_lab = "log10(" + x_label + ")" if log10_scale else x_label
             self.save(title, "validation_scores", "validation score", x_lab, legend="best")
 
-    def plot_tests_scores_from_different_folders(self, folder_names, labels, title, hue, p_vals=True):
+    def plot_tests_scores_from_different_folders(self, folder_names, labels, title, hue, p_vals=False):
         """
         plot test scores as bar plots for different classifiers
         :param folder_names: the output folders to retrieve the scores
