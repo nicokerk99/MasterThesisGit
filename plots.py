@@ -300,12 +300,12 @@ class Plotter:
         labels_cross = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
         big_within_df = pd.DataFrame()
         big_cross_df = pd.DataFrame()
-        p_vals_within = [None] * len(folder_names) if p_vals else None
+        p_vals_within = [None] * len(folder_names)
         for i, name in enumerate(folder_names):
             cv_df = retrieve_cv_metric(name, "accuracy")
             pvals = retrieve_pvals(name, default_keys=cv_df.columns)
             labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
-            p_vals_within[i] = ([pvals[lab] for lab in labels_pvals])
+            p_vals_within[i] = ([pvals[lab] for lab in labels_pvals]) if p_vals else None
 
             df_within = verbose_dataframe(cv_df[labels_within], self.subject_ids, compare=True)
             df_within[hue] = [labels[i]]*df_within.shape[0]
