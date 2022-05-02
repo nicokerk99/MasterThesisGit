@@ -62,7 +62,7 @@ class Plotter:
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight')
         plt.close()
 
-    def bar_plot_with_points(self, df, chance_level, pvals=None, compare=False, hue="Modality"):
+    def bar_plot_with_points(self, df, chance_level, pvals=None, compare=False, hue="Modality",is_variance=False):
         if not compare :
             if df["Region"].nunique() <= 2:
                 plt.figure(figsize=(10, 10))
@@ -137,7 +137,8 @@ class Plotter:
         else :
             plt.xticks(rotation=90)
 
-        plt.ylim(0.2, 0.5)
+        if not is_variance :
+            plt.ylim(0.2, 0.5)
 
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
@@ -235,6 +236,9 @@ class Plotter:
                         tmp = comb.split(":")
                         score = float(tmp[1])
                         indiv_params = tmp[0].split("-")
+                        if indiv_params[-1] == "cg":
+                            indiv_params[-2] += "cg"
+                            indiv_params = indiv_params[:-1]
                         for param in indiv_params:
                             key = param.split("__")[1]
                             tmp_ = param.split("=")
@@ -337,7 +341,7 @@ class Plotter:
 
                 big_df = pd.concat([big_df, df_mode], ignore_index=True)
             
-            self.bar_plot_with_points(big_df, False, compare=labels, hue="Voxels")
+            self.bar_plot_with_points(big_df, False, compare=labels, hue="Voxels", is_variance=True)
             self.save("Accuracy variance depending on number of voxel "+mode+" modality", "", "Accuracy variance", xlabel="Analysis", legend=None)
 
 
