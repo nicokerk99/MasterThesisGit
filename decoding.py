@@ -4,6 +4,7 @@ import time
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import confusion_matrix
+from imblearn.over_sampling import SMOTE
 from metrics import accuracy
 from utility import *
 
@@ -31,13 +32,15 @@ class Decoder:
     @n_perm : number of permutations to make when inspecting significance
     @masks_exist : list of dictionaries which tells for each subject which masks are present or not"""
 
-    def __init__(self, models, n_classes, n_splits, seed, n_perm, verbose=1):
+    def __init__(self, models, n_classes, n_splits, seed, n_perm, verbose=1, sm_samples = -1, sm_kn = -1):
         self.models = models
         self.n_classes = n_classes
         self.n_splits = n_splits
         self.seed = seed
         self.n_perm = n_perm
         self.verbose = verbose
+        self.sm_samples = sm_samples
+        self.sm_kn = sm_kn
         self.masks_exist = None
 
     def set_masks_exist(self, masks_exist):
@@ -54,8 +57,10 @@ class Decoder:
 
         conf_matrix = {name : np.zeros((self.n_classes, self.n_classes)) for name in self.models}
         validation_scores = dict((name, list()) for name in self.models)
-        for ind in range(self.n_splits):
-            test_index = range(ind*self.n_classes, (ind+1)*self.n_classes)
+        for indi in range(self.n_splits):
+            test_i = list(range(indi*self.n_classes, (indi+1)*self.n_classes))
+            #for indj in range(indi+1, self.n_splits):
+            test_index = test_i # + list(range(indj*self.n_classes, (indj+1)*self.n_classes))
             train_index = [i for i in range(len(brain_map)) if i not in test_index]
 
             if brain_map_2 is None : # within modality decoding
@@ -64,6 +69,17 @@ class Decoder:
                 X_train, X_test = brain_map[train_index], brain_map_2[test_index]
             y_train, y_test = labels[train_index], labels[test_index]
 
+            #X_test_mean = [0]*4
+            #for i in range(self.n_classes):
+            #    X_test_mean[i] = X_test[i]/2 + X_test[i+self.n_classes]/2 
+
+            #X_test = X_test_mean
+            #y_test = y_test[:4]
+
+            if self.sm_kn > 1 and self.sm_samples > 1:
+                sm = SMOTE(sampling_strategy={'Up': self.sm_samples, 'Down': self.sm_samples, 'Right': self.sm_samples, 'Left': self.sm_samples}, random_state=0, k_neighbors=self.sm_kn)
+                X_train, y_train = sm.fit_resample(X_train, y_train)
+                
             for name in self.models:
                 model = self.models[name]
                 model.fit(X_train, y_train)
@@ -72,7 +88,7 @@ class Decoder:
                 train_score_associated = model.score(X_train, y_train)
                 conf_matrix[name] += confusion_matrix(y_test, predictions)
 
-                if isinstance(model, GridSearchCV) :
+                if isinstance(model, GridSearchCV):
                     val_results = model.cv_results_
                     val_params = [str(elem).replace(" ","").replace(":","=").replace("\'","").replace("{","").replace("}","").replace(",","-") for elem in val_results['params']]
                     l = [str(i) for i in range(len(model.cv))]
