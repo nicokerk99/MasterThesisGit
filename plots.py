@@ -328,11 +328,15 @@ class Plotter:
         self.save(title+" across modalities", "", "Accuracy", xlabel="Analysis", legend=None)
 
     def plot_accuracy_var_from_different_folders(self, folder_names, labels):
+        labels_ = {}
+        labels_["within"] = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
+        labels_["cross"] = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
         for mode in ["within", "cross"]:
             big_df = pd.DataFrame()
             for i, name in enumerate(folder_names):
                 df = pd.read_csv(name+"var_"+mode+".csv", index_col=0)
-                new_cols = df.index[1:]
+                # new_cols = df.index[1:]
+                new_cols = labels_[mode]
                 temp_df = pd.DataFrame(columns=new_cols, index=[1], dtype=float)
                 temp_df[new_cols] = df[df.columns[0]].values[1:]
 
