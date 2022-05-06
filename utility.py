@@ -6,6 +6,7 @@ import os
 from load_data import retrieve_cv_metric
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
+from scipy.stats import ttest_ind
 
 """
 File containing small utility functions
@@ -143,7 +144,7 @@ def compute_anova(folder_base, folder_candidate):
     df = base_df.append(candidate_df)
 
     # Performing two-way ANOVA
-    model = ols('Score ~ C(dataset) +C(Analysis):C(dataset)', data=df).fit()
+    model = ols('Score ~ C(dataset) +C(Analysis) +C(Analysis):C(dataset) +C(dataset):C(Analysis)', data=df).fit()
     results = sm.stats.anova_lm(model, typ=2)
 
     print(results)
@@ -180,3 +181,30 @@ def compute_anova_demeaned(folder_base, folder_candidate):
     results = sm.stats.anova_lm(model, typ=2)
 
     print(results)
+
+
+def compute_two_sided_t_test_demeaned(folder_base, folder_candidate):
+    base_df = retrieve_cv_metric(folder_base, "accuracy")
+    base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+    base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
+
+    candidate_df = retrieve_cv_metric(folder_candidate, "accuracy")
+    candidate_df = candidate_df[candidate_df.columns.drop(list(candidate_df.filter(regex='cross')))]
+    candidate_df = candidate_df[candidate_df.columns.drop(list(candidate_df.filter(regex='vis_PT')))]
+
+    tmp_df = base_df.append(candidate_df)
+    mean_vector = tmp_df.mean(axis=0)
+    base_df = base_df.sub(mean_vector, axis=1)
+    candidate_df = candidate_df.sub(mean_vector, axis=1)
+
+    base_df = verbose_dataframe(base_df, range(1, 24), compare=True)
+    base_df.dropna(inplace=True)
+    base_df.drop("Score_mean_dev", axis=1, inplace=True)
+
+    candidate_df = verbose_dataframe(candidate_df, range(1, 24), compare=True)
+    candidate_df.dropna(inplace=True)
+    candidate_df.drop("Score_mean_dev", axis=1, inplace=True)
+
+    results = ttest_ind(base_df["Score"], candidate_df["Score"], equal_var=False, random_state=0)
+    print(results)
+
