@@ -139,7 +139,7 @@ class Plotter:
             plt.xticks(rotation=90)
 
         if is_variance:
-            plt.ylim(0, 0.2)
+            plt.ylim(0, 0.12)
         else:
             plt.ylim(0.2, 0.5)
 
@@ -338,7 +338,7 @@ class Plotter:
             big_df = pd.DataFrame()
             for i, name in enumerate(folder_names):
                 df = pd.read_csv(name+"var_"+mode+".csv", index_col=0)
-                df.applymap(lambda x : np.sqrt(x))
+                df = df.applymap(lambda x : np.sqrt(x))
                 # new_cols = df.index[1:]
                 new_cols = labels_[mode]
                 temp_df = pd.DataFrame(columns=new_cols, index=[1], dtype=float)
