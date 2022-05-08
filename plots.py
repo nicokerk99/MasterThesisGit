@@ -59,10 +59,11 @@ class Plotter:
         plt.title(label, wrap=True)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
+        label = label.replace(" ", "_")
         plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight')
         plt.close()
 
-    def bar_plot_with_points(self, df, chance_level, pvals=None, compare=False, hue="Modality"):
+    def bar_plot_with_points(self, df, chance_level, pvals=None, compare=False, hue="Modality",is_variance=False):
         if not compare :
             if df["Region"].nunique() <= 2:
                 plt.figure(figsize=(10, 10))
@@ -75,7 +76,7 @@ class Plotter:
             if df[hue].nunique() <= 1:
                 hue_order = ["Cross-modal"]
 
-        else :
+        else:
             plt.figure(figsize=(40, 10))
             x = "Analysis"
             hue_order = compare
@@ -120,21 +121,27 @@ class Plotter:
         )
         bplot.legend_.remove()
 
-        if not compare :
+        if pvals is not None:
             i = 0
             for bar in bplot.patches[:len(pvals)]:
                 star = stars(pvals[i])
                 if star != "ns":
                     bplot.annotate(star,
-                                   (bar.get_x() + bar.get_width() / 2, 0),
+                                   (bar.get_x() + bar.get_width() / 2, 0.2),
                                    ha="center", va="center",
                                    size=12, xytext=(0, 8),
                                    textcoords="offset points",
                                    color="white")
                 i += 1
-
+            if len(pvals) > 8 :
+                plt.xticks(rotation=90)
         else :
             plt.xticks(rotation=90)
+
+        if is_variance:
+            plt.ylim(0, 0.2)
+        else:
+            plt.ylim(0.2, 0.5)
 
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
@@ -157,6 +164,7 @@ class Plotter:
             labels = ["cross_" + region + "_L", "cross_" + region + "_R"]
             df_cross = verbose_dataframe(df[labels], self.subject_ids)
             self.bar_plot_with_points(df_cross, chance_level, pvals=[pvals[l] for l in labels])
+            plt.ylim(0.2, 0.5)
             self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
                       legend=None)
 
@@ -231,6 +239,9 @@ class Plotter:
                         tmp = comb.split(":")
                         score = float(tmp[1])
                         indiv_params = tmp[0].split("-")
+                        if indiv_params[-1] == "cg":
+                            indiv_params[-2] += "cg"
+                            indiv_params = indiv_params[:-1]
                         for param in indiv_params:
                             key = param.split("__")[1]
                             tmp_ = param.split("=")
@@ -285,7 +296,7 @@ class Plotter:
             x_lab = "log10(" + x_label + ")" if log10_scale else x_label
             self.save(title, "validation_scores", "validation score", x_lab, legend="best")
 
-    def plot_tests_scores_from_different_folders(self, folder_names, labels, title, hue):
+    def plot_tests_scores_from_different_folders(self, folder_names, labels, title, hue, p_vals=False):
         """
         plot test scores as bar plots for different classifiers
         :param folder_names: the output folders to retrieve the scores
@@ -296,8 +307,12 @@ class Plotter:
         labels_cross = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
         big_within_df = pd.DataFrame()
         big_cross_df = pd.DataFrame()
+        p_vals_within = [None] * len(folder_names)
         for i, name in enumerate(folder_names):
             cv_df = retrieve_cv_metric(name, "accuracy")
+            pvals = retrieve_pvals(name, default_keys=cv_df.columns)
+            labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
+            p_vals_within[i] = ([pvals[lab] for lab in labels_pvals]) if p_vals else None
 
             df_within = verbose_dataframe(cv_df[labels_within], self.subject_ids, compare=True)
             df_within[hue] = [labels[i]]*df_within.shape[0]
@@ -307,28 +322,44 @@ class Plotter:
             df_cross[hue] = [labels[i]]*df_cross.shape[0]
             big_cross_df = pd.concat([big_cross_df, df_cross])
 
-        self.bar_plot_with_points(big_within_df, True, pvals=None, compare=labels, hue=hue)
+        p_vals_ordered = interleave_lists(p_vals_within) if p_vals else None
+
+        self.bar_plot_with_points(big_within_df, True, pvals=p_vals_ordered, compare=labels, hue=hue)
         self.save(title+" within modality", "", "Accuracy", xlabel="Analysis", legend=None)
 
         self.bar_plot_with_points(big_cross_df, True, pvals=None, compare=labels, hue=hue)
         self.save(title+" across modalities", "", "Accuracy", xlabel="Analysis", legend=None)
 
-    def plot_accuracy_var_from_different_folders(self, folder_names, labels):
+    def plot_accuracy_std_from_different_folders(self, folder_names, labels, title, hue):
+        labels_ = {}
+        labels_["within"] = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
+        labels_["cross"] = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
         for mode in ["within", "cross"]:
             big_df = pd.DataFrame()
             for i, name in enumerate(folder_names):
                 df = pd.read_csv(name+"var_"+mode+".csv", index_col=0)
-                new_cols = df.index[1:]
+                df.applymap(lambda x : np.sqrt(x))
+                # new_cols = df.index[1:]
+                new_cols = labels_[mode]
                 temp_df = pd.DataFrame(columns=new_cols, index=[1], dtype=float)
                 temp_df[new_cols] = df[df.columns[0]].values[1:]
 
                 df_mode = verbose_dataframe(temp_df[new_cols], temp_df.index, compare=True)
-                df_mode["Voxels"] = [labels[i]]*df_mode.shape[0]
+                df_mode[hue] = [labels[i]]*df_mode.shape[0]
 
                 big_df = pd.concat([big_df, df_mode], ignore_index=True)
             
-            self.bar_plot_with_points(big_df, False, compare=labels, hue="Voxels")
-            self.save("Accuracy variance depending on number of voxel "+mode+" modality", "", "Accuracy variance", xlabel="Analysis", legend=None)
+            self.bar_plot_with_points(big_df, False, compare=labels, hue=hue, is_variance=True)
+            self.save("Accuracy standard deviation for "+title.lower()+" "+mode+" modality", "", "standard deviation", xlabel="Analysis", legend=None)
+
+
+# function that interleaves element from multiple lists
+def interleave_lists(lists):
+    final_list = []
+    for i in range(len(lists[0])):
+        for j in range(len(lists)):
+            final_list.append(lists[j][i])
+    return final_list
 
 
 def plot_average_voxel_intensities(maps, classes, n_subjects):
