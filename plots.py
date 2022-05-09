@@ -56,7 +56,7 @@ class Plotter:
                 plt.legend(loc="lower center")
             else:
                 plt.legend(loc=legend)
-        plt.title(label, wrap=True)
+        #plt.title(label, wrap=True)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         label = label.replace(" ", "_")
@@ -303,7 +303,7 @@ class Plotter:
         :param labels: the names of the classifiers to put on the legend of the plot
         :return:
         """
-        labels_within = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
+        labels_within = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R"]
         labels_cross = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
         big_within_df = pd.DataFrame()
         big_cross_df = pd.DataFrame()
@@ -311,7 +311,7 @@ class Plotter:
         for i, name in enumerate(folder_names):
             cv_df = retrieve_cv_metric(name, "accuracy")
             pvals = retrieve_pvals(name, default_keys=cv_df.columns)
-            labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
+            labels_pvals = ["vis_V5_L", "vis_V5_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
             p_vals_within[i] = ([pvals[lab] for lab in labels_pvals]) if p_vals else None
 
             df_within = verbose_dataframe(cv_df[labels_within], self.subject_ids, compare=True)
@@ -332,7 +332,7 @@ class Plotter:
 
     def plot_accuracy_std_from_different_folders(self, folder_names, labels, title, hue):
         labels_ = {}
-        labels_["within"] = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
+        labels_["within"] = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R"]
         labels_["cross"] = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
         for mode in ["within", "cross"]:
             big_df = pd.DataFrame()
@@ -342,7 +342,7 @@ class Plotter:
                 # new_cols = df.index[1:]
                 new_cols = labels_[mode]
                 temp_df = pd.DataFrame(columns=new_cols, index=[1], dtype=float)
-                temp_df[new_cols] = df[df.columns[0]].values[1:]
+                temp_df[new_cols] = df[df.columns[0]][labels_[mode]].values
 
                 df_mode = verbose_dataframe(temp_df[new_cols], temp_df.index, compare=True)
                 df_mode[hue] = [labels[i]]*df_mode.shape[0]
