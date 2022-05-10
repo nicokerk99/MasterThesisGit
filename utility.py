@@ -6,6 +6,7 @@ import os
 from load_data import retrieve_cv_metric
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
+from statsmodels.stats.anova import AnovaRM
 from scipy.stats import ttest_ind
 
 """
@@ -61,7 +62,7 @@ def compute_p_val_bootstrap(df_bootstrap, df_group_results):
     return pvals
 
 
-def verbose_dataframe(df, subjects_ids, compare=False):
+def verbose_dataframe(df, subjects_ids, compare=False, anova=False):
     column_names = ["Modality", "Region", "Score", "Score_mean_dev"]
     if compare:
         column_names = ["Analysis", "Score", "Score_mean_dev"]
@@ -77,7 +78,9 @@ def verbose_dataframe(df, subjects_ids, compare=False):
             mod = "Cross-modal"
 
         region = "V5 " if "V5" in keywords else "PT "
-        region += "L" if "L" in keywords else "R"
+        if not anova:
+            region += "L" if "L" in keywords else "R"
+        hemisphere = "L" if "L" in keywords else "R"
 
         analysis = mod + " " + region
 
@@ -93,6 +96,11 @@ def verbose_dataframe(df, subjects_ids, compare=False):
                     new_entry["Modality"] = mod
                     new_entry["Region"] = region
                 new_entry["Score"] = df[entry][i]
+                if anova :
+                    new_entry["Subject"] = i
+                    new_entry["Region"] = region
+                    new_entry["Hemisphere"] = hemisphere
+
                 new_entry["Score_mean_dev"] = df[entry][i] / n + avg - avg / n
                 vb_df = vb_df.append(new_entry, ignore_index=True)
 
@@ -125,27 +133,47 @@ def compute_group_confusion_matrix(df_cf_matrixes, subjects_ids):
     return group_cf
 
 
-def compute_anova(folder_base, folder_candidate):
-    base_df = retrieve_cv_metric(folder_base, "accuracy")
-    base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
-    base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
-    base_df = verbose_dataframe(base_df, range(1, 24), compare=True)
-    base_df["dataset"] = np.repeat(["base"], 23 * 6)
-    base_df.dropna(inplace=True)
-    base_df.drop("Score_mean_dev", axis=1, inplace=True)
-    candidate_df = retrieve_cv_metric(folder_candidate, "accuracy")
-    candidate_df = candidate_df[candidate_df.columns.drop(list(candidate_df.filter(regex='cross')))]
-    candidate_df = candidate_df[candidate_df.columns.drop(list(candidate_df.filter(regex='vis_PT')))]
-    candidate_df = verbose_dataframe(candidate_df, range(1, 24), compare=True)
-    candidate_df["dataset"] = np.repeat(["candidate"], 23 * 6)
-    candidate_df.dropna(inplace=True)
-    candidate_df.drop("Score_mean_dev", axis=1, inplace=True)
+def compute_anova(folders):
+    df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", "Score", "Subject"])
+    for folder in folders:
+        base_df = retrieve_cv_metric(folder, "accuracy")
+        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
+        base_df = verbose_dataframe(base_df, range(1, 24), compare=False, anova=True)
+        base_df["dataset"] = np.repeat([folder], 23 * 6)
+        base_df.dropna(inplace=True)
+        base_df.drop("Score_mean_dev", axis=1, inplace=True)
 
-    df = base_df.append(candidate_df)
+        df = df.append(base_df)
 
-    # Performing two-way ANOVA
-    model = ols('Score ~ C(dataset) +C(Analysis) +C(Analysis):C(dataset) +C(dataset):C(Analysis)', data=df).fit()
+    # Performing ANOVA
+    model = ols('Score ~ C(dataset) +C(Modality) + C(Region) + C(Hemisphere) + C(Subject)', data=df).fit()
     results = sm.stats.anova_lm(model, typ=2)
+
+    print(results)
+
+
+def compute_repeated_anova(folders):
+    df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", "Score", "Subject"])
+    for folder in folders:
+        base_df = retrieve_cv_metric(folder, "accuracy")
+        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
+        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
+
+        tmp_df = base_df.dropna()  # might be deleted if needed
+        subjects_ok = [int(idd) for idd in tmp_df.index]
+
+        verb_df = verbose_dataframe(tmp_df, subjects_ok, compare=False, anova=True)
+        verb_df["dataset"] = np.repeat([folder], verb_df.shape[0])
+        verb_df.dropna(inplace=True)
+        verb_df.drop("Score_mean_dev", axis=1, inplace=True)
+
+        df = df.append(verb_df)
+
+    # Performing ANOVA
+    model = AnovaRM(df, 'Score', 'Subject', within=['Modality', 'Region', 'Hemisphere', 'dataset'])
+    results = model.fit()
 
     print(results)
 
@@ -180,6 +208,7 @@ def compute_anova_demeaned(folder_base, folder_candidate):
     model = ols('Score ~ C(dataset)', data=df).fit()
     results = sm.stats.anova_lm(model, typ=2)
 
+    print("ANOVA results:")
     print(results)
 
 
@@ -206,5 +235,7 @@ def compute_two_sided_t_test_demeaned(folder_base, folder_candidate):
     candidate_df.drop("Score_mean_dev", axis=1, inplace=True)
 
     results = ttest_ind(base_df["Score"], candidate_df["Score"], equal_var=False, random_state=0)
+
+    print("Two-sided t-test results:")
     print(results)
 
