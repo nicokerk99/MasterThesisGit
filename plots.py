@@ -297,7 +297,7 @@ class Plotter:
             x_lab = "log10(" + x_label + ")" if log10_scale else x_label
             self.save(title, "validation_scores", "validation score", x_lab, legend="best")
 
-    def plot_tests_scores_from_different_folders(self, folder_names, labels, title, hue, p_vals=False):
+    def plot_tests_scores_from_different_folders(self, folder_names, labels, title, hue, p_vals=False, only_within=False):
         """
         plot test scores as bar plots for different classifiers
         :param folder_names: the output folders to retrieve the scores
@@ -310,7 +310,7 @@ class Plotter:
         big_cross_df = pd.DataFrame()
         p_vals_within = [None] * len(folder_names)
         for i, name in enumerate(folder_names):
-            cv_df = retrieve_cv_metric(name, "accuracy")
+            cv_df = retrieve_cv_metric(name, "accuracy", only_within=only_within)
             pvals = retrieve_pvals(name, default_keys=cv_df.columns)
             labels_pvals = ["vis_V5_L", "vis_V5_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
             p_vals_within[i] = ([pvals[lab] for lab in labels_pvals]) if p_vals else None
@@ -319,23 +319,27 @@ class Plotter:
             df_within[hue] = [labels[i]]*df_within.shape[0]
             big_within_df = pd.concat([big_within_df, df_within])
 
-            df_cross = verbose_dataframe(cv_df[labels_cross], self.subject_ids, compare=True)
-            df_cross[hue] = [labels[i]]*df_cross.shape[0]
-            big_cross_df = pd.concat([big_cross_df, df_cross])
+            if not only_within:
+                df_cross = verbose_dataframe(cv_df[labels_cross], self.subject_ids, compare=True)
+                df_cross[hue] = [labels[i]]*df_cross.shape[0]
+                big_cross_df = pd.concat([big_cross_df, df_cross])
 
         p_vals_ordered = interleave_lists(p_vals_within) if p_vals else None
 
         self.bar_plot_with_points(big_within_df, True, pvals=p_vals_ordered, compare=labels, hue=hue)
         self.save(title+" within modality", "", "Accuracy", xlabel="Analysis", legend=None)
 
-        self.bar_plot_with_points(big_cross_df, True, pvals=None, compare=labels, hue=hue)
-        self.save(title+" across modalities", "", "Accuracy", xlabel="Analysis", legend=None)
+        if not only_within:
+            self.bar_plot_with_points(big_cross_df, True, pvals=None, compare=labels, hue=hue)
+            self.save(title+" across modalities", "", "Accuracy", xlabel="Analysis", legend=None)
 
-    def plot_accuracy_std_from_different_folders(self, folder_names, labels, title, hue):
+    def plot_accuracy_std_from_different_folders(self, folder_names, labels, title, hue, only_within=False):
         labels_ = {}
         labels_["within"] = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R"]
         labels_["cross"] = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
-        for mode in ["within", "cross"]:
+        modes = ["within"]
+        if not only_within : modes.append("cross")
+        for mode in modes:
             big_df = pd.DataFrame()
             for i, name in enumerate(folder_names):
                 df = pd.read_csv(name+"var_"+mode+".csv", index_col=0)
