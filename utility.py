@@ -137,10 +137,10 @@ def compute_anova(folders):
     df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", "Score", "Subject"])
     for folder in folders:
         base_df = retrieve_cv_metric(folder, "accuracy")
-        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
         base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
         base_df = verbose_dataframe(base_df, range(1, 24), compare=False, anova=True)
-        base_df["dataset"] = np.repeat([folder], 23 * 6)
+        base_df["dataset"] = np.repeat([folder], base_df.shape[0])
         base_df.dropna(inplace=True)
         base_df.drop("Score_mean_dev", axis=1, inplace=True)
 
@@ -158,8 +158,8 @@ def compute_repeated_anova(folders):
     for folder in folders:
         base_df = retrieve_cv_metric(folder, "accuracy")
         base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
-        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
-        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
 
         tmp_df = base_df.dropna()  # might be deleted if needed
         subjects_ok = [int(idd) for idd in tmp_df.index]

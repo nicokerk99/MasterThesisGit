@@ -146,7 +146,7 @@ class Plotter:
         if chance_level:
             plt.axhline(0.25, label="chance level", color="black", alpha=0.5)
 
-    def plot_cv_score_with_points(self, df, pvals, chance_level=False):
+    def plot_cv_score_with_points(self, df, pvals, chance_level=False, only_within=False):
         """ function to plot the results of the cross validation, with individual points.
         @param df : the dataframe containing the cross val results
         @param chance_level : defaults to False, set to True if you want a line y = 0.25 to be added to the plot """
@@ -161,12 +161,13 @@ class Plotter:
             self.save("Decoding within modality in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
                       legend=None)
 
-            labels = ["cross_" + region + "_L", "cross_" + region + "_R"]
-            df_cross = verbose_dataframe(df[labels], self.subject_ids)
-            self.bar_plot_with_points(df_cross, chance_level, pvals=[pvals[l] for l in labels])
-            plt.ylim(0.2, 0.5)
-            self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
-                      legend=None)
+            if not only_within:
+                labels = ["cross_" + region + "_L", "cross_" + region + "_R"]
+                df_cross = verbose_dataframe(df[labels], self.subject_ids)
+                self.bar_plot_with_points(df_cross, chance_level, pvals=[pvals[l] for l in labels])
+                plt.ylim(0.2, 0.5)
+                self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
+                          legend=None)
 
         labels = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
         labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]

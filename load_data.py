@@ -81,7 +81,7 @@ def load_full_data(subjects_ids, n_classes, nb_runs, maps_folder="brain_maps", m
     return maps_masked, masks_exist
 
 
-def retrieve_cv_metric(out_directory, metric):
+def retrieve_cv_metric(out_directory, metric, only_within = False):
     """
     :param out_directory: directory from which retrieve the result
     :param metric: the metric we want to retrieve
@@ -90,32 +90,40 @@ def retrieve_cv_metric(out_directory, metric):
     """
     # joining dataframes in prevision of plotting
     cv_within_df = pd.read_csv(out_directory + metric + "_within.csv", index_col=0)
+    if only_within:
+        return cv_within_df
     cv_cross_df = pd.read_csv(out_directory + metric + "_cross.csv", index_col=0)
     for col in cv_cross_df.columns: cv_within_df[col] = cv_cross_df[col]
 
     return cv_within_df
 
 
-def retrieve_cv_matrixes(out_directory):
+def retrieve_cv_matrixes(out_directory, only_within = False):
     # joining dataframes in prevision of plotting
     cv_within_df = pd.read_csv(out_directory + "confusion_matrixes_within.csv", index_col=0)
+    if only_within:
+        return cv_within_df
     cv_cross_df = pd.read_csv(out_directory + "confusion_matrixes_cross.csv", index_col=0)
     for col in cv_cross_df.columns: cv_within_df[col] = cv_cross_df[col]
 
     return cv_within_df
 
 
-def retrieve_val_scores(out_directory):
+def retrieve_val_scores(out_directory, only_within = False):
     # joining dataframes in prevision of plotting
     cv_within_df = pd.read_csv(out_directory + "validation_scores_within.csv", index_col=0)
+    if only_within:
+        return cv_within_df
     cv_cross_df = pd.read_csv(out_directory + "validation_scores_cross.csv", index_col=0)
     for col in cv_cross_df.columns: cv_within_df[col] = cv_cross_df[col]
 
     return cv_within_df
 
 
-def retrieve_bootstrap_metric(out_directory, metric):
+def retrieve_bootstrap_metric(out_directory, metric, only_within = False):
     bootstrap_within_df = pd.read_csv(out_directory + metric + "_bootstraps_within.csv", index_col=0)
+    if only_within:
+        return bootstrap_within_df
     bootstrap_cross_df = pd.read_csv(out_directory + metric + "_bootstraps_cross.csv", index_col=0)
     for col in bootstrap_cross_df.columns: bootstrap_within_df[col] = bootstrap_cross_df[col]
 
