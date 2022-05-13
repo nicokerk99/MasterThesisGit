@@ -156,8 +156,8 @@ def compute_anova(folders):
 def compute_repeated_anova(folders):
     df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", "Score", "Subject"])
     for folder in folders:
-        base_df = retrieve_cv_metric(folder, "accuracy")
-        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+        base_df = retrieve_cv_metric(folder, "accuracy", only_within=True)
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
         #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
         #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
 
@@ -181,8 +181,8 @@ def compute_repeated_anova(folders):
 def compute_repeated_anova_feature_selection(folders1, folders2):
     df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", "Percentage", "Score", "Subject"])
     for i, folder in enumerate(folders1):
-        base_df = retrieve_cv_metric(folder, "accuracy")
-        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+        base_df = retrieve_cv_metric(folder, "accuracy", only_within=True)
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
         #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
         #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
 
