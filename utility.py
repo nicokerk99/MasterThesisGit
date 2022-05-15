@@ -182,23 +182,6 @@ def compute_repeated_anova_feature_selection(folders1, folders2):
     df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", "Percentage", "Score", "Subject"])
     for i, folder in enumerate(folders1):
         base_df = retrieve_cv_metric(folder, "accuracy", only_within=True)
-        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
-        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
-        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
-
-        tmp_df = base_df.dropna()  # might be deleted if needed
-        subjects_ok = [int(idd) for idd in tmp_df.index]
-
-        verb_df = verbose_dataframe(tmp_df, subjects_ok, compare=False, anova=True)
-        verb_df["dataset"] = np.repeat([folder], verb_df.shape[0])
-        verb_df["Percentage"] = np.repeat([i], verb_df.shape[0])
-        verb_df.dropna(inplace=True)
-        verb_df.drop("Score_mean_dev", axis=1, inplace=True)
-
-        df = df.append(verb_df)
-
-    for i, folder in enumerate(folders2):
-        base_df = retrieve_cv_metric(folder, "accuracy")
         base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
         #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
         #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
@@ -207,7 +190,24 @@ def compute_repeated_anova_feature_selection(folders1, folders2):
         subjects_ok = [int(idd) for idd in tmp_df.index]
 
         verb_df = verbose_dataframe(tmp_df, subjects_ok, compare=False, anova=True)
-        verb_df["dataset"] = np.repeat([folder], verb_df.shape[0])
+        verb_df["dataset"] = np.repeat(["set 1"], verb_df.shape[0])
+        verb_df["Percentage"] = np.repeat([i], verb_df.shape[0])
+        verb_df.dropna(inplace=True)
+        verb_df.drop("Score_mean_dev", axis=1, inplace=True)
+
+        df = df.append(verb_df)
+
+    for i, folder in enumerate(folders2):
+        base_df = retrieve_cv_metric(folder, "accuracy", only_within=True)
+        base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
+        #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
+
+        tmp_df = base_df.dropna()  # might be deleted if needed
+        subjects_ok = [int(idd) for idd in tmp_df.index]
+
+        verb_df = verbose_dataframe(tmp_df, subjects_ok, compare=False, anova=True)
+        verb_df["dataset"] = np.repeat(["set 2"], verb_df.shape[0])
         verb_df["Percentage"] = np.repeat([i], verb_df.shape[0])
         verb_df.dropna(inplace=True)
         verb_df.drop("Score_mean_dev", axis=1, inplace=True)
