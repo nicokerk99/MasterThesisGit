@@ -221,6 +221,34 @@ def compute_repeated_anova_feature_selection(folders1, folders2):
     print(results)
 
 
+def compute_repeated_anova_SMOTE(folders, outer_level, inner_level):
+    df = pd.DataFrame(columns=["Modality", "Region", "Hemisphere", outer_level, inner_level, "Score", "Subject"])
+    for i, folder_list in enumerate(folders):
+        for j, folder in enumerate(folder_list):
+            base_df = retrieve_cv_metric(folder, "accuracy", only_within=True)
+            base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
+            #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='vis_PT')))]
+            #base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='aud_PT')))]  # to be deleted
+
+            tmp_df = base_df.dropna()  # might be deleted if needed
+            subjects_ok = [int(idd) for idd in tmp_df.index]
+
+            verb_df = verbose_dataframe(tmp_df, subjects_ok, compare=False, anova=True)
+            #verb_df["dataset"] = np.repeat(["set 1"], verb_df.shape[0])
+            verb_df[outer_level] = np.repeat([i], verb_df.shape[0])
+            verb_df[inner_level] = np.repeat([j], verb_df.shape[0])
+            verb_df.dropna(inplace=True)
+            verb_df.drop("Score_mean_dev", axis=1, inplace=True)
+
+            df = df.append(verb_df)
+
+    # Performing ANOVA
+    model = AnovaRM(df, 'Score', 'Subject', within=['Modality', outer_level, inner_level, 'Region', 'Hemisphere'])
+    results = model.fit()
+
+    print(results)
+
+
 def compute_anova_demeaned(folder_base, folder_candidate):
     base_df = retrieve_cv_metric(folder_base, "accuracy")
     base_df = base_df[base_df.columns.drop(list(base_df.filter(regex='cross')))]
