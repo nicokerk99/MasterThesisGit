@@ -169,6 +169,13 @@ class Plotter:
                 self.save("Decoding across modalities in " + region, self.cv_scores_dir, ylabel, xlabel="analysis",
                           legend=None)
 
+        if not only_within:
+            labels = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
+            labels_pvals = ["cross_V5_L", "cross_V5_R", "cross_PT_L", "cross_PT_R"]
+            df_cross_all = verbose_dataframe(df[labels], self.subject_ids)
+            self.bar_plot_with_points(df_cross_all, chance_level, pvals=[pvals[k] for k in labels_pvals])
+            self.save("Decoding across modality", self.cv_scores_dir, ylabel, xlabel="analysis", legend=None)
+
         labels = ["aud_V5_L", "aud_V5_R", "vis_V5_L", "vis_V5_R", "aud_PT_L", "aud_PT_R", "vis_PT_L", "vis_PT_R"]
         labels_pvals = ["vis_V5_L", "vis_V5_R", "vis_PT_L", "vis_PT_R", "aud_V5_L", "aud_V5_R", "aud_PT_L", "aud_PT_R"]
         df_within_all = verbose_dataframe(df[labels], self.subject_ids)
@@ -399,7 +406,7 @@ def plot_average_voxel_intensities(maps, classes, n_subjects):
     plt.ylabel("intensity")
     plt.title("Average voxel intensities for " + region)
     plt.legend()
-    plt.savefig("plots/average_voxel_intensities" + region + ".png")
+    plt.savefig("plots/average_voxel_intensities" + region + ".png", dpi=600)
 
 
 def plot_normalize_voxel_intensities(maps, classes):
