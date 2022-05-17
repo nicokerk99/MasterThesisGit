@@ -60,7 +60,7 @@ class Plotter:
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         label = label.replace(" ", "_")
-        plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight')
+        plt.savefig(self.plot_dir + "/" + sub_dir + "/" + label + ".jpg", bbox_inches='tight', dpi=600)
         plt.close()
 
     def bar_plot_with_points(self, df, chance_level, pvals=None, compare=False, hue="Modality",is_variance=False):
