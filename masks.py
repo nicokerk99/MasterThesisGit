@@ -6,7 +6,7 @@ import nibabel
 # from nilearn.image import index_img
 
 
-def apply_mask_to_maps(maps: List[Dict[str, npt.NDArray[np.float64]]], 
+def apply_mask_to_maps(maps: List[nibabel.nifti1.Nifti1Image], 
                        masks: List[Dict[str, nibabel.nifti1.Nifti1Image]], 
                        masks_exist: List[Dict[str, bool]]) -> List[Dict[str, npt.NDArray[np.float64]]]:
     """ returns a list (size n_subjects) of dictionaries with maps where the masks were applied
