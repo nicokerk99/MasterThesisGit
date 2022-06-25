@@ -1,8 +1,14 @@
+from typing import List, Dict
 from nilearn.masking import apply_mask
+import numpy as np
+import numpy.typing as npt
+import nibabel
 # from nilearn.image import index_img
 
 
-def apply_mask_to_maps(maps, masks, masks_exist):
+def apply_mask_to_maps(maps: List[Dict[str, npt.NDArray[np.float64]]], 
+                       masks: List[Dict[str, nibabel.nifti1.Nifti1Image]], 
+                       masks_exist: List[Dict[str, bool]]) -> List[Dict[str, npt.NDArray[np.float64]]]:
     """ returns a list (size n_subjects) of dictionaries with maps where the masks were applied
      @maps : a list (size n_subjects) of maps (t-maps or beta-maps)
      @masks : a list (size n_subjects) of dictionaries
@@ -19,7 +25,10 @@ def apply_mask_to_maps(maps, masks, masks_exist):
     return maps_masked
 
 
-def get_part_of_maps(maps, start_index, end_index, masks_exist):
+def get_part_of_maps(maps: List[Dict[str, npt.NDArray[np.float64]]], 
+                     start_index: int, 
+                     end_index: int, 
+                     masks_exist: List[Dict[str, bool]]) -> List[Dict[str, npt.NDArray[np.float64]]]:
     """  returns the maps where only keep samples from start_index to end_index
     @maps : list (size n_subjects) of dictionaries (keys are types of masks), which contain n_samples maps """
     maps_sliced = [dict() for _ in range(len(maps))]
